@@ -1,8 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime
-# Remove the geoalchemy2 import
-# from geoalchemy2 import Geometry
 import json
 
 db = SQLAlchemy()
@@ -33,6 +31,7 @@ class Article(db.Model):
     title = db.Column(db.Text, nullable=False)
     content = db.Column(db.Text)
     url = db.Column(db.String(500), unique=True, nullable=False)
+    source_url = db.Column(db.String(500))  # Controller references this field
     published_date = db.Column(db.DateTime)
     scraped_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -64,7 +63,7 @@ class Alert(db.Model):
     incident_date = db.Column(db.DateTime)  # Extracted incident date
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Spatial information (using separate lat/lng columns instead of PostGIS)
+    # Spatial information (using separate lat/lng columns)
     latitude = db.Column(db.Float)  # WGS84 latitude
     longitude = db.Column(db.Float)  # WGS84 longitude
     location_name = db.Column(db.String(200))
@@ -76,6 +75,13 @@ class Alert(db.Model):
     
     # Relationships
     entities = db.relationship('AlertEntity', backref='alert', lazy=True, cascade='all, delete-orphan')
+    
+    @property
+    def geometry(self):
+        """Property to mimic PostGIS geometry for controller compatibility"""
+        if self.latitude is not None and self.longitude is not None:
+            return {'lat': self.latitude, 'lng': self.longitude}
+        return None
     
     def to_geojson_point(self):
         """Convert lat/lng to GeoJSON point format"""
@@ -136,19 +142,31 @@ def create_indexes():
     from sqlalchemy import text
     
     with db.engine.connect() as conn:
-        conn.execute(text("""
-            CREATE INDEX IF NOT EXISTS idx_alerts_lat_lng ON alerts (latitude, longitude);
-        """))
-        conn.execute(text("""
-            CREATE INDEX IF NOT EXISTS idx_alerts_incident_date ON alerts (incident_date);
-        """))
-        conn.execute(text("""
-            CREATE INDEX IF NOT EXISTS idx_alerts_violence_score ON alerts (violence_score);
-        """))
-        conn.execute(text("""
-            CREATE INDEX IF NOT EXISTS idx_articles_published_date ON articles (published_date);
-        """))
-        conn.execute(text("""
-            CREATE INDEX IF NOT EXISTS idx_alert_entities_type ON alert_entities (entity_type);
-        """))
-        conn.commit()
+        try:
+            # Use more compatible index creation syntax
+            conn.execute(text("""
+                CREATE INDEX IF NOT EXISTS idx_alerts_lat_lng ON alerts (latitude, longitude);
+            """))
+            conn.execute(text("""
+                CREATE INDEX IF NOT EXISTS idx_alerts_incident_date ON alerts (incident_date);
+            """))
+            conn.execute(text("""
+                CREATE INDEX IF NOT EXISTS idx_alerts_violence_score ON alerts (violence_score);
+            """))
+            conn.execute(text("""
+                CREATE INDEX IF NOT EXISTS idx_articles_published_date ON articles (published_date);
+            """))
+            conn.execute(text("""
+                CREATE INDEX IF NOT EXISTS idx_alert_entities_type ON alert_entities (entity_type);
+            """))
+            conn.execute(text("""
+                CREATE INDEX IF NOT EXISTS idx_alerts_created_at ON alerts (created_at);
+            """))
+            conn.execute(text("""
+                CREATE INDEX IF NOT EXISTS idx_alerts_location_name ON alerts (location_name);
+            """))
+            conn.commit()
+            print("✅ Database indexes created successfully!")
+        except Exception as e:
+            print(f"⚠️  Some indexes may already exist or failed to create: {e}")
+            conn.rollback()
