@@ -89,7 +89,6 @@ def dashboard():
 @bp.route('/api/rss-feeds')
 @login_required
 def api_rss_feeds():
-    """Get all RSS feeds with their status"""
     feeds = RSSFeed.query.all()
     
     result = [{
@@ -103,10 +102,6 @@ def api_rss_feeds():
     } for feed in feeds]
     
     return jsonify(result)
-
-# -----------------------------------------
-# ALERTS API
-# -----------------------------------------
 
 @bp.route('/api/alerts')
 @login_required
@@ -154,7 +149,7 @@ def api_alerts():
         
         alerts = query.paginate(
             page=page, 
-            per_page=min(per_page, 100),  # Limit max per_page
+            per_page=min(per_page, 100), 
             error_out=False
         )
         
@@ -239,18 +234,12 @@ def api_alert_detail(alert_id):
         print(f"API alert detail error: {e}")
         return jsonify({'error': 'Failed to fetch alert details'}), 500
 
-# -----------------------------------------
-# TOPICS AND CATEGORIES API
-# -----------------------------------------
-
 @bp.route('/api/topics')
 @login_required
 def api_topics():
-    """Get available alert topics/categories"""
     try:
         thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-        
-        # Get topics from classification_details JSON field
+    
         topics_query = db.session.query(
             func.case([
                 (Alert.classification_details.op('::text').ilike('%bullying%'), 'Bullying'),
@@ -286,13 +275,11 @@ def api_topic_details(topic):
     try:
         seven_days_ago = datetime.utcnow() - timedelta(days=7)
         
-        # Get recent alerts for this topic
         recent_alerts = db.session.query(Alert, Article).join(Article).filter(
             Alert.classification_details.op('::text').ilike(f'%{topic.lower()}%'),
             Alert.created_at >= seven_days_ago
         ).order_by(Alert.created_at.desc()).limit(10).all()
         
-        # Get entities for this topic
         entities = db.session.query(
             AlertEntity.entity_text,
             AlertEntity.entity_type,
