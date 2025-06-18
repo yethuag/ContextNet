@@ -8,54 +8,51 @@ from models import db, User, Article, Alert, ProcessingLog, AlertEntity, RSSFeed
 
 bp = Blueprint('main', __name__)
 
-@bp.route('/login', methods=['GET', 'POST'])
+@bp.route('/login', methods=['POST'])
 def login():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        
-        user = User.query.filter_by(username=username).first()
-        
-        if user and check_password_hash(user.password, password):
-            login_user(user)
-            return redirect(url_for('main.dashboard'))
-        else:
-            flash('Invalid username or password')
-    
-    return render_template('login.html')
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
 
-@bp.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        
-        if User.query.filter_by(username=username).first():
-            flash('Username already exists')
-            return render_template('register.html')
-        
-        hashed_password = generate_password_hash(password)
-        user = User(username=username, password=hashed_password)
-        
-        db.session.add(user)
-        db.session.commit()
-        
+    user = User.query.filter_by(username=username).first()
+
+    if user and check_password_hash(user.password, password):
         login_user(user)
-        return redirect(url_for('main.dashboard'))
-    
-    return render_template('register.html')
+        return jsonify({'message': 'Login successful'}), 200
+    else:
+        return jsonify({'message': 'Invalid username or password'}), 401
+
+@bp.route('/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+
+    if not username or not password:
+        return jsonify({'message': 'Username and password are required'}), 400
+
+    if User.query.filter_by(username=username).first():
+        return jsonify({'message': 'Username already exists'}), 409
+
+    hashed_password = generate_password_hash(password)
+    user = User(username=username, password=hashed_password)
+
+    db.session.add(user)
+    db.session.commit()
+
+    login_user(user)
+    return jsonify({'message': 'Registration successful'}), 201
+
 
 @bp.route('/logout')
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('main.login'))
+    return jsonify({'message': 'Logout successful'}), 200
 
-
-@bp.route('/')
-@bp.route('/dashboard')
+@bp.route('/api/dashboard', methods=['GET'])
 @login_required
-def dashboard():
+def api_dashboard():
     try:
         stats = {
             'total_alerts': Alert.query.count(),
@@ -77,7 +74,8 @@ def dashboard():
             'active_topics': 0
         }
     
-    return render_template('dashboard.html', stats=stats)
+    return jsonify(stats)
+
 
 
 @bp.route('/api/rss-feeds')
@@ -458,46 +456,3 @@ def api_analytics_trends():
             'topic_trends': []
         })
 
-# -----------------------------------------
-# SYSTEM STATUS AND LOGS
-# -----------------------------------------
-
-@bp.route('/api/system/status')
-@login_required
-def api_system_status():
-    try:
-        recent_logs = ProcessingLog.query.order_by(
-            ProcessingLog.started_at.desc()
-        ).limit(10).all()
-        
-        twenty_four_hours_ago = datetime.utcnow() - timedelta(hours=24)
-        stats = db.session.query(
-            ProcessingLog.stage,
-            ProcessingLog.status,
-            func.count('*').label('count')
-        ).filter(
-            ProcessingLog.started_at >= twenty_four_hours_ago
-        ).group_by(ProcessingLog.stage, ProcessingLog.status).order_by(
-            ProcessingLog.stage, ProcessingLog.status
-        ).all()
-        
-        return jsonify({
-            'recent_logs': [{
-                'id': log.id,
-                'stage': log.stage,
-                'status': log.status,
-                'message': log.message,
-                'processing_time': log.processing_time,
-                'started_at': log.started_at.isoformat(),
-                'completed_at': log.completed_at.isoformat() if log.completed_at else None
-            } for log in recent_logs],
-            'stats': [{
-                'stage': stat.stage,
-                'status': stat.status,
-                'count': stat.count
-            } for stat in stats]
-        })
-        
-    except Exception as e:
-        print(f"API system status error: {e}")
-        return jsonify({'recent_logs': [], 'stats': []})

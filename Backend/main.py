@@ -12,7 +12,7 @@ def create_app():
     app = Flask(__name__)
     
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'faksdfaldfamrqiw21204i9fkalsamvewpoiqr')
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///violence_detection.db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'pool_pre_ping': True,
@@ -142,16 +142,6 @@ def main():
         db_info = "Unknown database type"
     
     print(f"📊 Database: {db_info}")
-    print("🔗 Available endpoints:")
-    print("   - Dashboard: http://localhost:5000/")
-    print("   - Login: http://localhost:5000/login")
-    print("   - Register: http://localhost:5000/register")
-    print("   - Health Check: http://localhost:5000/health")
-    print("   - API Alerts: http://localhost:5000/api/alerts")
-    print("   - RSS Feeds: http://localhost:5000/api/rss-feeds")
-    print("   - Map Data: http://localhost:5000/api/map/heatmap")
-    print("   - Analytics: http://localhost:5000/api/analytics/trends")
-    print("=" * 60)
     
     debug_mode = os.environ.get('FLASK_ENV') == 'development'
     port = int(os.environ.get('PORT', 5000))
