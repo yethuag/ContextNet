@@ -51,9 +51,6 @@ def logout():
     logout_user()
     return redirect(url_for('main.login'))
 
-# -----------------------------------------
-# DASHBOARD ROUTES
-# -----------------------------------------
 
 @bp.route('/')
 @bp.route('/dashboard')
@@ -82,9 +79,6 @@ def dashboard():
     
     return render_template('dashboard.html', stats=stats)
 
-# -----------------------------------------
-# RSS FEEDS API
-# -----------------------------------------
 
 @bp.route('/api/rss-feeds')
 @login_required
@@ -315,9 +309,6 @@ def api_topic_details(topic):
         print(f"API topic details error: {e}")
         return jsonify({'topic': topic, 'recent_alerts': [], 'entities': []})
 
-# -----------------------------------------
-# MAP DATA API ROUTES
-# -----------------------------------------
 
 @bp.route('/api/map/heatmap')
 @login_required
