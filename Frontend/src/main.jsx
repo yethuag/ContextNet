@@ -1,27 +1,39 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "./index.css";
-
 import {
   createBrowserRouter,
   Navigate,
   RouterProvider,
 } from "react-router-dom";
+import { Loader2 } from "lucide-react"; // Added missing import
+import "./index.css";
+
+// Components
+import Layout from "./components/Layout";
+
+// Pages
 import SignUp from "./pages/SignUpPage/SignUp";
 import LogIn from "./pages/LogInPage/LogIn";
-import AlertPage from "./pages/AlertPage/AlertPage";
 import DashboardPage from "./pages/DashboardPage/DashboardPage";
+import AlertPage from "./pages/AlertPage/AlertPage";
+import TrendPage from "./pages/TrendPage/TrendPage";
+
+// Loading component
 const LoadingFallback = () => (
-  <div className="flex justify-center items-center h-screen">
-    <Loader2 className="animate-spin" size={18} />
+  <div className="flex justify-center items-center h-screen bg-gray-950">
+    <Loader2 className="animate-spin text-white" size={24} />
   </div>
 );
 
+// Router configuration
 const router = createBrowserRouter([
+  // Root redirect
   {
     path: "/",
-    element: <DashboardPage />,
+    element: <Navigate to="/signup" replace />,
   },
+
+  // Auth routes
   {
     path: "/signup",
     element: <SignUp />,
@@ -30,18 +42,40 @@ const router = createBrowserRouter([
     path: "/login",
     element: <LogIn />,
   },
+
+  // Protected app routes with layout
   {
-    path: "/alerts",
-    element: <AlertPage />,
+    path: "/app",
+    element: <Layout />,
+    errorElement: <LoadingFallback />,
+    children: [
+      {
+        index: true,
+        element: <Navigate to="/app/dashboard" replace />,
+      },
+      {
+        path: "dashboard",
+        element: <DashboardPage />,
+      },
+      {
+        path: "alerts",
+        element: <AlertPage />,
+      },
+      {
+        path: "trends",
+        element: <TrendPage />,
+      },
+    ],
+  },
+
+  {
+    path: "*",
+    element: <Navigate to="/signup" replace />,
   },
 ]);
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <RouterProvider
-      router={router}
-      fallbackElement={<LoadingFallback />}
-      hydrationData={{}}
-    />
+    <RouterProvider router={router} />
   </StrictMode>
 );
