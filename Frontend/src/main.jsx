@@ -17,6 +17,10 @@ const LoadingFallback = () => (
 
 const router = createBrowserRouter([
   {
+    path: "/",
+    element: <SignUp />,
+  },
+  {
     path: "/signup",
     element: <SignUp />,
   },
