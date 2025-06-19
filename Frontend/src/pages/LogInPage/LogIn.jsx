@@ -1,14 +1,16 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Mail, Lock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const LogIn = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    navigate("/app/dashboard");
     console.log("Login attempt:", { email, password });
-    // Handle login logic here
   };
 
   return (
