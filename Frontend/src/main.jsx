@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
+
 import {
   createBrowserRouter,
   Navigate,
@@ -8,7 +9,8 @@ import {
 } from "react-router-dom";
 import SignUp from "./pages/SignUpPage/SignUp";
 import LogIn from "./pages/LogInPage/LogIn";
-
+import AlertPage from "./pages/AlertPage/AlertPage";
+import DashboardPage from "./pages/DashboardPage/DashboardPage";
 const LoadingFallback = () => (
   <div className="flex justify-center items-center h-screen">
     <Loader2 className="animate-spin" size={18} />
@@ -18,7 +20,7 @@ const LoadingFallback = () => (
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <SignUp />,
+    element: <DashboardPage />,
   },
   {
     path: "/signup",
@@ -27,6 +29,10 @@ const router = createBrowserRouter([
   {
     path: "/login",
     element: <LogIn />,
+  },
+  {
+    path: "/alerts",
+    element: <AlertPage />,
   },
 ]);
 
