@@ -42,8 +42,6 @@ const router = createBrowserRouter([
     path: "/login",
     element: <LogIn />,
   },
-
-  // Protected app routes with layout
   {
     path: "/app",
     element: <Layout />,
