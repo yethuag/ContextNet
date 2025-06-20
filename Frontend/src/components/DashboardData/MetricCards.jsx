@@ -8,12 +8,12 @@ export const MetricCards = () => {
     {
       title: 'Violence', 
       value: '24',
-      color: 'text-purple-400'
+      color: 'text-red-400'
     },
     {
       title: 'LGBTQ+',
       value: '19', 
-      color: 'text-blue-300'
+      color: 'text-purple-500'
     }
   ];
 
