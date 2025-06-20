@@ -7,8 +7,11 @@ const DisplayCalender = () => {
   const [showCalendar, setShowCalendar] = useState(false);
   const handleShowCalendar = (date) => {
     setSelectedDate(date);
-    setShowCalendar(!showCalendar);
+    
   };
+  const onClose = () => {
+   setShowCalendar(!showCalendar);
+  }
   return (
     <div>
         <button
@@ -18,7 +21,11 @@ const DisplayCalender = () => {
       {format(selectedDate, 'do MMMM - yyyy')}
       </button>
       {showCalendar && (
-        <Calendar onDateSelect={handleShowCalendar} selectedDate={selectedDate} />
+        <div className='fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center'>
+          <div>
+          <Calendar onDateSelect={handleShowCalendar} selectedDate={selectedDate} onClose={onClose} />
+          </div>
+        </div>
       )}
       </div>
   )

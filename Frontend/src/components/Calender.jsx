@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight} from 'lucide-react';
+import { ChevronLeft, ChevronRight,X} from 'lucide-react';
 
-const Calendar = ({ onDateSelect, selectedDate }) => {
+
+const Calendar = ({ onDateSelect, selectedDate, onClose }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [internalSelectedDate, setInternalSelectedDate] = useState(selectedDate || null);
 
@@ -139,6 +140,12 @@ const Calendar = ({ onDateSelect, selectedDate }) => {
         >
           <ChevronRight className="w-5 h-5 text-gray-300" />
         </button>
+        <button
+                onClick={onClose}
+                className="p-2 rounded-lg hover:bg-gray-700 transition-colors duration-200 ml-2"
+              >
+                <X className="w-4 h-4 text-gray-300" />
+              </button>
       </div>
 
       {/* Days of week header */}
