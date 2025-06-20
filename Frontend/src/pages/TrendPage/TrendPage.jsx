@@ -1,7 +1,7 @@
 import React from "react";
 
 const TrendPage = () => {
-  return <div>TrendPage</div>;
+  return <div className="text-white">TrendPage</div>;
 };
 
 export default TrendPage;
