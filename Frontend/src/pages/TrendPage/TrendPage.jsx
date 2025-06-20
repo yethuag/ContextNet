@@ -1,7 +1,12 @@
 import React from "react";
-
+import DisplayCalender from "../../components/DisplayCalender";
 const TrendPage = () => {
-  return <div className="text-white">TrendPage</div>;
+  return (
+    <div>
+      <h1>Trend Page</h1>
+      <DisplayCalender />
+    </div>
+  );
 };
 
 export default TrendPage;
