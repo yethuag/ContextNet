@@ -3,7 +3,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import DisplayCalender from "../../components/DisplayCalender";
 import MetricCards from "../../components/MetricCards"
-import TagsList from "../../components/TagsList";
+import TagsList from "../../components/DashBoard/DashBoardTagsList";
 import { Tag } from "lucide-react";
 
 const DashboardPage = () => {

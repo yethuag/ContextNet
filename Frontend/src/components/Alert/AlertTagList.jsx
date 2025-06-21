@@ -1,4 +1,4 @@
-export const TagsList = ({onTagClick}) => {
+const AlertTagsList = ({onTagClick}) => {
   const tableData = [
     {
       id: 1,
@@ -74,6 +74,9 @@ export const TagsList = ({onTagClick}) => {
     }
   ];
 
+  // Filter to only show "Active" status items (which display as "High")
+  const filteredData = tableData.filter(item => item.status === 'Active');
+
   return (
     <div className="bg-gray-800/95 backdrop-blur-sm p-6 rounded-2xl border border-gray-600/30 w-full max-w-full overflow-hidden shadow-2xl">
       <div className="flex justify-between items-center mb-4">
@@ -103,7 +106,7 @@ export const TagsList = ({onTagClick}) => {
         <div className="max-h-64 overflow-y-auto" style={{scrollbarWidth: 'thin', scrollbarColor: '#4b5563 #1f2937'}}>
           <table className="w-full">
             <tbody>
-              {tableData.map((item, index) => (
+              {filteredData.map((item, index) => (
                 <tr key={index} className="hover:bg-gray-700/20 transition-colors border-b border-gray-700/30 last:border-b-0">
                   <td className="text-gray-300 text-sm font-medium py-5 w-16">{item.id}</td>
                   <td className="text-white text-sm font-medium py-5 w-40">
@@ -112,12 +115,8 @@ export const TagsList = ({onTagClick}) => {
                     </button>
                     </td>
                   <td className="py-5 w-28">
-                    <span className={`px-4 py-2 rounded-lg text-xs font-medium border ${
-                      item.status === 'Active' 
-                        ? 'bg-red-900/20 text-red-400 border-red-700/50' 
-                        : 'bg-teal-900/20 text-teal-400 border-teal-700/50'
-                    }`}>
-                      {item.status === 'Active' ? 'High' : 'Medium'}
+                    <span className="px-4 py-2 rounded-lg text-xs font-medium border bg-red-900/20 text-red-400 border-red-700/50">
+                      High
                     </span>
                   </td>
                   <td className="text-white text-sm font-medium py-5 w-20">{item.percentage}</td>
@@ -137,4 +136,4 @@ export const TagsList = ({onTagClick}) => {
   );
 };
 
-export default TagsList;
+export default AlertTagsList;

@@ -1,5 +1,5 @@
 import DisplayCalender from "../../components/DisplayCalender";
-import TagsList from "../../components/TagsList";
+import AlertTagsList from "../../components/Alert/AlertTagList";
 import { useState } from "react";
 import AlertSubPage from "./AlertSubPage";
 
@@ -33,7 +33,7 @@ const AlertPage = () => {
         </div>
         {/* main for alert */}
         <div className="w-full max-w-xl mx-auto mt-6 rounded-xl shadow-lg p-6">
-            <TagsList onTagClick={handleTag}/>
+            <AlertTagsList onTagClick={handleTag}/>
         </div>
     </>
   );
