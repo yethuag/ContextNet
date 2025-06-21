@@ -1,4 +1,4 @@
-export const TagsList = () => {
+export const TagsList = ({onTagClick}) => {
   const tableData = [
     {
       id: 1,
@@ -78,7 +78,7 @@ export const TagsList = () => {
     <div className="bg-gray-800/95 backdrop-blur-sm p-6 rounded-2xl border border-gray-600/30 w-full max-w-full overflow-hidden shadow-2xl">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-white text-lg font-medium">List of Tags</h3>
-        <span className="text-gray-400 text-sm">{new Date().toLocaleDateString()}</span>
+        {/* <span className="text-gray-400 text-sm">{new Date().toLocaleDateString()}</span> */}
       </div>
 
       <div className="overflow-x-auto">
@@ -106,7 +106,11 @@ export const TagsList = () => {
               {tableData.map((item, index) => (
                 <tr key={index} className="hover:bg-gray-700/20 transition-colors border-b border-gray-700/30 last:border-b-0">
                   <td className="text-gray-300 text-sm font-medium py-5 w-16">{item.id}</td>
-                  <td className="text-white text-sm font-medium py-5 w-40">{item.tag}</td>
+                  <td className="text-white text-sm font-medium py-5 w-40">
+                    <button onClick={() => onTagClick(item)}>
+                      {item.tag}
+                    </button>
+                    </td>
                   <td className="py-5 w-28">
                     <span className={`px-4 py-2 rounded-lg text-xs font-medium border ${
                       item.status === 'Active' 

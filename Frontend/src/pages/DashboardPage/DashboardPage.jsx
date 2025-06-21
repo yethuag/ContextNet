@@ -17,10 +17,10 @@ const DashboardPage = () => {
     <>
       <div className="flex justify-center items-center">
         <div className="flex-2">
-            <h1 className="text-4xl font-bold text-purple-400">Dashboard</h1>
+            <DisplayCalender />
         </div>
         <div className="flex-2">
-            <DisplayCalender />
+            <h1 className="text-4xl font-bold text-purple-400">Dashboard</h1>
         </div>
       </div>
       <MetricCards />
