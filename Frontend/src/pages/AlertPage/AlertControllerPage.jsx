@@ -1,6 +1,6 @@
 import DisplayCalender from "../../components/DisplayCalender";
 import TagsList from "../../components/TagsList";
-import { use, useState } from "react";
+import { useState } from "react";
 import AlertSubPage from "./AlertSubPage";
 
 const AlertPage = () => {
@@ -12,9 +12,7 @@ const AlertPage = () => {
   }
   if(selectedTag === 'alert_tag'){
     return (
-      <>
         <AlertSubPage selectedTag={tag}/>
-      </>
     )
   }
   
