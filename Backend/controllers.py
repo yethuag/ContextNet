@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash
+from flask import Blueprint, request, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import text, func, distinct
@@ -120,7 +120,6 @@ def api_alerts():
             query = query.filter(Alert.location_name.ilike(f'%{location}%'))
         
         if topic:
-            # Filter by topic - check if classification_details contains the topic
             query = query.filter(Alert.classification_details.op('::text').ilike(f'%{topic}%'))
         
         if date_from:
@@ -135,7 +134,7 @@ def api_alerts():
                 date_to = datetime.fromisoformat(date_to.replace('Z', '+00:00'))
                 query = query.filter(Alert.incident_date <= date_to)
             except ValueError:
-                pass  # Invalid date format, skip filter
+                pass 
         
         query = query.order_by(Alert.created_at.desc())
         

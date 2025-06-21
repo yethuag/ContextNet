@@ -15,8 +15,8 @@ import Layout from "./components/Layout";
 import SignUp from "./pages/SignUpPage/SignUp";
 import LogIn from "./pages/LogInPage/LogIn";
 import DashboardPage from "./pages/DashboardPage/DashboardPage";
-import AlertPage from "./pages/AlertPage/AlertPage";
 import TrendPage from "./pages/TrendPage/TrendPage";
+import MainAlertPage from "./pages/AlertPage/MainAlertPage";
 
 // Loading component
 const LoadingFallback = () => (
@@ -57,7 +57,7 @@ const router = createBrowserRouter([
       },
       {
         path: "alerts",
-        element: <AlertPage />,
+        element: <MainAlertPage />,
       },
       {
         path: "trends",

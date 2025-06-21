@@ -99,7 +99,6 @@ def create_app():
         return {
             'status': 'healthy',
             'timestamp': datetime.utcnow().isoformat(),
-            'version': '1.0.0'
         }
     
     return app
