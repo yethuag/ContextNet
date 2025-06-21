@@ -4,13 +4,16 @@ const AlertPage = () => {
   return (
 
     <div>
-      
-      <DisplayCalender />
-      <h1 className='text-2xl font-bold text-white flex justify-center mb-10'>Alert Page</h1>
-           {/* main for alert */}
-           <div>
+      {/* alert calender nav */}
+      <div className='flex justify-between items-center p-4'>
+        <div className='flex-2'>
+          <DisplayCalender />
+        </div>
+        <div className='flex-2'>
+          <h1 className='text-2xl font-bold text-white'>Alert Page</h1>
+        </div>
+      </div>
 
-           </div>
     </div>
   )
 }

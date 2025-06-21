@@ -110,7 +110,6 @@ class AlertEntity(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class ProcessingLog(db.Model):
-    """Logs for tracking processing pipeline status"""
     __tablename__ = 'processing_logs'
     
     id = db.Column(db.Integer, primary_key=True)
