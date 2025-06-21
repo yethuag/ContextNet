@@ -8,13 +8,18 @@ const AlertPage = () => {
   const [selectedTag,setSelecetedTag] = useState('alert_main')
   const handleTag = (tag) => {
     setTag(tag)
-    setSelecetedTag('alert_tag')
+    setSelecetedTag('alert_sub')
   }
-  if(selectedTag === 'alert_tag'){
+  const handleBackToMain = () => {
+    setTag('alert_main')
+    setSelecetedTag('')
+  }
+  if(selectedTag === 'alert_sub'){
     return (
-        <AlertSubPage selectedTag={tag}/>
+        <AlertSubPage selectedTag={tag} onBack={handleBackToMain}/>
     )
   }
+
   
     return (
     <>
