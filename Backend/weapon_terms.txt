@@ -1,0 +1,20 @@
+ak-47
+ar-15
+rifle
+handgun
+pistol
+revolver
+shotgun
+grenade
+improvised explosive device
+bomb
+car bomb
+suicide vest
+missile
+rocket-propelled grenade
+molotov cocktail
+knife
+machete
+sword
+drone strike
+land mine

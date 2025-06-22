@@ -3,7 +3,7 @@ import AlertTagsList from "../../components/Alert/AlertTagList";
 import { useState } from "react";
 import AlertSubPage from "./AlertSubPage";
 
-const AlertPage = () => {
+const AlertPage = ({alerts }) => {
   const [tag,setTag] = useState(null);
   const [selectedTag,setSelecetedTag] = useState('alert_main')
   const handleTag = (tag) => {

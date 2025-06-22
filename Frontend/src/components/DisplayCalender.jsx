@@ -1,47 +1,36 @@
 import { format } from "date-fns";
-import { useState } from "react";
 import Calendar from "./Calender";
 
-const DisplayCalender = () => {
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [showCalendar, setShowCalendar] = useState(false);
-
-  const handleShowCalendar = (date) => {
-    setSelectedDate(date);
+/**
+ * DisplayCalender wraps the Calendar popup and handles selecting and closing.
+ */
+const DisplayCalender = ({ date, onDateChange, onClose }) => {
+  /**
+   * Called when a date is selected in Calendar.
+   * Updates parent and closes the popup.
+   */
+  const handleDateSelect = (newDate) => {
+    onDateChange(newDate);
+    onClose();
   };
 
-  const onClose = () => {
-    setShowCalendar(!showCalendar);
-  };
-
+  /**
+   * Close when clicking outside the calendar
+   */
   const handleBackgroundClick = (e) => {
-    if (e.target === e.currentTarget) {
-      setShowCalendar(false);
-    }
+    if (e.target === e.currentTarget) onClose();
   };
 
   return (
-    <div>
-      <button
-        className="border border-white px-4 py-2 rounded-lg text-white bg-transparent cursor-pointer"
-        onClick={() => setShowCalendar((e) => !e)}
-      >
-        {format(selectedDate, "do MMMM - yyyy")}
-      </button>
-      {showCalendar && (
-        <div
-          className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center"
-          onClick={handleBackgroundClick}
-        >
-          <div>
-            <Calendar
-              onDateSelect={handleShowCalendar}
-              selectedDate={selectedDate}
-              onClose={onClose}
-            />
-          </div>
-        </div>
-      )}
+    <div
+      className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center"
+      onClick={handleBackgroundClick}
+    >
+      <Calendar
+        selectedDate={date}
+        onDateSelect={handleDateSelect}
+        onClose={onClose}
+      />
     </div>
   );
 };

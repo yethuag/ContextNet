@@ -5,12 +5,34 @@ import { useNavigate } from "react-router-dom";
 const LogIn = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate("/app/dashboard");
-    console.log("Login attempt:", { email, password });
+    setError("");
+    try {
+      const response = await fetch("http://localhost:8000/token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          username: email,
+          password: password,
+        }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Optionally store token: localStorage.setItem("token", data.access_token);
+        navigate("/app/dashboard");
+      } else {
+        const data = await response.json();
+        setError(data.detail || "Login failed");
+      }
+    } catch (err) {
+      setError("Network error during login");
+    }
   };
 
   return (
@@ -54,7 +76,7 @@ const LogIn = () => {
               </p>
             </div>
 
-            <div className="space-y-4">
+            <form className="space-y-4" onSubmit={handleSubmit}>
               {/* Email Input */}
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -85,10 +107,14 @@ const LogIn = () => {
                 />
               </div>
 
+              {/* Error Message */}
+              {error && (
+                <div className="text-red-400 text-sm text-center">{error}</div>
+              )}
+
               {/* Submit Button */}
               <button
                 type="submit"
-                onClick={handleSubmit}
                 className="w-full py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl hover:shadow-purple-500/25 hover:cursor-pointer mt-6"
               >
                 Log in
@@ -106,7 +132,7 @@ const LogIn = () => {
                   </a>
                 </p>
               </div>
-            </div>
+            </form>
           </div>
         </div>
       </div>

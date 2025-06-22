@@ -1,94 +1,120 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
+import HighlightedText from '../../components/HighlightedText';
 
-const AlertSubPage = ({ selectedTag = { tag: "Bullying" }, onBack }) => {
-  const feedsData = [
-    {
-      id: 1,
-      text: "I've been dreading going to Lincoln High School every morning. There's this group of students — mostly led by Jake and a girl named Tiffany — who won't stop picking on me. It started with stupid comments in the hallway, but now they've started spreading rumors online and making fun of my clothes on Snapchat."
-    },
-    {
-      id: 2,
-      text: "I honestly don't know how much more of this I can take. Every single day at Jefferson Middle School, I'm either being tripped, shoved into lockers, or called names like 'fat freak' or 'big girl' by a group of eighth graders — mostly Jason, Marcus, and Emily."
-    },
-    {
-      id: 3,
-      text: "I thought joining the Discord server for our school gaming club would be fun, but it turned into a nightmare. At first, it was harmless teasing, but soon people started targeting me whenever I said anything. Liam, Roxy, and Zane made a whole private channel just to mock everything I posted. They edited my profile pic into memes and called me 'Cringe Queen' and 'Discord Dumpster' in front of everyone. Last night, Zane posted screenshots from my old Instagram account and tagged them with #TryHardTrash. I begged them to stop, but they just laughed and said, 'It's just jokes — grow a spine.'"
-    }
-  ];
+const API_BASE = 'http://localhost:8001';
 
-  const entitiesData = [
-    { name: "Lincoln High School", type: "ORG" },
-    { name: "morning", type: "TIME" },
-    { name: "Snapchat", type: "PRODUCT" },
-    { name: "Jake", type: "PERSON" },
-    { name: "Tiffany", type: "PERSON" },
-    { name: "Jefferson Middle School", type: "ORG" },
-    { name: "Jason", type: "PERSON" },
-    { name: "Marcus", type: "PERSON" },
-    { name: "Emily", type: "PERSON" },
-    { name: "Discord", type: "PRODUCT" },
-    { name: "school", type: "LOC" },
-    { name: "Liam", type: "PERSON" },
-    { name: "Roxy", type: "PERSON" },
-    { name: "Zane", type: "PERSON" },
-    { name: "Last night", type: "TIME" },
-    { name: "Instagram", type: "PRODUCT" }
-  ];
+// Extend your style map to include WORK_OF_ART
+const ENTITY_STYLES = {
+  PERSON:      'bg-green-200 text-green-800',
+  ORG:         'bg-blue-200  text-blue-800',
+  GPE:         'bg-purple-200 text-purple-800',
+  LOC:         'bg-yellow-200 text-yellow-800',
+  TIME:        'bg-orange-200 text-orange-800',
+  PRODUCT:     'bg-pink-200   text-pink-800',
+  NORP:        'bg-indigo-200 text-indigo-800',
+  CARDINAL:    'bg-gray-200   text-gray-800',
+  VIOLENT_ACT: 'bg-red-200    text-red-800',
+  FAC:         'bg-teal-200   text-teal-800',
+  DATE:        'bg-green-100  text-green-900',
+  ORDINAL:     'bg-yellow-100 text-yellow-900',
+  WORK_OF_ART: 'bg-red-100    text-red-900',
+  default:     'bg-gray-200   text-gray-800',
+};
 
-  const getTypeColor = (type) => {
-    switch (type) {
-      case "ORG": return "text-red-400";
-      case "TIME": return "text-orange-400";
-      case "PRODUCT": return "text-purple-400";
-      case "PERSON": return "text-green-400";
-      case "LOC": return "text-yellow-400";
-      default: return "text-blue-400";
-    }
-  };
+const ENTITY_DESCRIPTIONS = {
+  PERSON:      'People, names of individuals',
+  ORG:         'Organizations, companies, agencies',
+  GPE:         'Countries, cities, states',
+  LOC:         'Non‐GPE locations (mountains, rivers, etc.)',
+  TIME:        'Time expressions (dates, times)',
+  PRODUCT:     'Objects, vehicles, foods, etc.',
+  NORP:        'Nationalities or religious/political groups',
+  CARDINAL:    'Numerical values',
+  VIOLENT_ACT: 'Describes violent acts',
+  FAC:         'Buildings, airports, highways, etc.',
+  DATE:        'Dates or calendar references',
+  ORDINAL:     '“First”, “2nd”, etc.',
+  WORK_OF_ART:'Titles of works (books, songs, programs, etc.)',
+};
+
+export default function AlertSubPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [alert, setAlert] = useState(null);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/alerts`)
+      .then(res => res.json())
+      .then(data => {
+        const found = data.find(a => a.id === id);
+        if (!found) return navigate('/app/alerts');
+        setAlert(found);
+      })
+      .catch(() => navigate('/app/alerts'));
+  }, [id, navigate]);
+
+  if (!alert) {
+    return <div className="flex items-center justify-center h-64">Loading…</div>;
+  }
+
+  // only one legend entry per label
+  const uniqueLabels = Array.from(new Set(alert.entities.map(e => e.label)));
 
   return (
-    <div className="bg-gray-900 min-h-screen p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Alert tag */}
-        <div className="mb-6">
-          <div className="bg-gray-800 p-4 rounded border border-gray-700 flex items-center justify-between">
-            <span className="text-white text-lg">{selectedTag.tag}</span>
-            <button className="text-gray-400 hover:text-white text-xl">×</button>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <h2 className="text-xl font-medium text-white mb-4">Feeds</h2>
-            <div className="space-y-4">
-              {feedsData.map((feed) => (
-                <div key={feed.id} className="bg-gray-800 p-6 rounded border border-gray-700">
-                  <p className="text-gray-300 leading-relaxed">{feed.text}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+    <div className="bg-gray-900 min-h-screen p-6 text-gray-200">
+      <button onClick={() => navigate(-1)} className="text-white mb-4 underline">
+        ← Back to Alerts
+      </button>
 
-          <div>
-            <h2 className="text-xl font-medium text-white mb-4">Entities</h2>
-            <div className="bg-gray-800 p-6 rounded border border-gray-700">
-              <div className="space-y-3">
-                {entitiesData.map((entity, index) => (
-                  <div key={index} className="flex justify-between items-center">
-                    <span className={`${getTypeColor(entity.type)} text-sm`}>
-                      {entity.name}
-                    </span>
-                    <span className={`${getTypeColor(entity.type)} text-xs font-medium`}>
-                      {entity.type}
-                    </span>
-                  </div>
-                ))}
+      <h1 className="text-2xl font-bold mb-2">{alert.title}</h1>
+      <div className="text-sm text-gray-400 mb-4">
+        {alert.source} •{' '}
+        {alert.published_at
+          ? format(new Date(alert.published_at), 'PPpp')
+          : '—'}
+      </div>
+
+      {/* SUMMARY WITH HIGHLIGHTS */}
+      <div className="prose prose-invert mb-6">
+        <HighlightedText text={alert.summary} entities={alert.entities} />
+      </div>
+
+      {/* DETECTED ENTITIES */}
+      <h2 className="text-xl font-semibold mb-2">Detected Entities</h2>
+      <ul className="grid grid-cols-2 gap-2 mb-8">
+        {alert.entities.map((e, i) => {
+          const style = ENTITY_STYLES[e.label] || ENTITY_STYLES.default;
+          return (
+            <li
+              key={i}
+              className={`${style} flex justify-between items-center px-3 py-1 rounded`}
+            >
+              <span>{e.text}</span>
+              <span className="text-xs font-medium">{e.label}</span>
+            </li>
+          );
+        })}
+      </ul>
+
+      {/* LEGEND */}
+      <h2 className="text-xl font-semibold mb-2">Legend</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {uniqueLabels.map(label => {
+          const style = ENTITY_STYLES[label] || ENTITY_STYLES.default;
+          const desc = ENTITY_DESCRIPTIONS[label] || '—';
+          return (
+            <div key={label} className="flex items-start gap-3">
+              <span className={`inline-block w-4 h-4 rounded ${style}`} />
+              <div>
+                <div className="text-sm font-semibold">{label}</div>
+                <div className="text-xs text-gray-400">{desc}</div>
               </div>
             </div>
-          </div>
-        </div>
+          );
+        })}
       </div>
     </div>
   );
-};
-
-export default AlertSubPage;
+}
