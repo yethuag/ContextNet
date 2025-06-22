@@ -60,7 +60,7 @@ class Alert(db.Model):
     classification_details = db.Column(db.JSON)  # Store detailed BART results
     
     # Temporal information
-    incident_date = db.Column(db.DateTime)  # Extracted incident date
+    incident_date = db.Column(db.DateTime) 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Spatial information (using separate lat/lng columns)
