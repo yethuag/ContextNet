@@ -74,7 +74,6 @@ const AlertTagsList = ({onTagClick}) => {
     }
   ];
 
-  // Filter to only show "Active" status items (which display as "High")
   const filteredData = tableData.filter(item => item.status === 'Active');
 
   return (
