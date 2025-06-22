@@ -8,7 +8,6 @@ const Map = () => {
   const popup = useRef(null);
   const [mapLoaded, setMapLoaded] = useState(false);
 
-  // Your country data for popup and colors
   const countryData = {
     USA: { name: "United States", word: "Freedom", color: "#ff6b6b" },
     CAN: { name: "Canada", word: "Maple", color: "#4ecdc4" },
@@ -38,7 +37,7 @@ const Map = () => {
         sources: {
           "world-countries": {
             type: "geojson",
-            data: null, // Will load data later from your custom.geo.json
+            data: null,
           },
         },
         layers: [
@@ -54,11 +53,15 @@ const Map = () => {
             paint: {
               "fill-color": [
                 "case",
-                ["has", ["get", "ISO_A3"], ["literal", colorMap]],
-                ["get", ["get", "ISO_A3"], ["literal", colorMap]],
-                "#64748b", // fallback color for countries not in colorMap
+                ["has", ["get", "iso_a3_eh"], ["literal", colorMap]],
+                ["get", ["get", "iso_a3_eh"], ["literal", colorMap]],
+                "#64748b",
               ],
               "fill-opacity": 0.8,
+              "fill-opacity-transition": {
+                duration: 200,
+                delay: 0,
+              },
             },
           },
           {
@@ -76,9 +79,13 @@ const Map = () => {
             source: "world-countries",
             paint: {
               "fill-color": "#ffffff",
-              "fill-opacity": 0.2,
+              "fill-opacity": 0,
+              "fill-opacity-transition": {
+                duration: 200,
+                delay: 0,
+              },
             },
-            filter: ["==", "ISO_A3", ""], // initially no hover
+            filter: ["==", "iso_a3_eh", ""], // initially no hover
           },
         ],
       },
@@ -98,7 +105,6 @@ const Map = () => {
       setMapLoaded(true);
       map.current.addControl(new maplibregl.NavigationControl(), "top-right");
 
-      // Load your realistic countries GeoJSON file
       fetch("../public/data/custom.geo.json")
         .then((response) => response.json())
         .then((geojson) => {
@@ -108,40 +114,65 @@ const Map = () => {
         })
         .catch((err) => console.error("Failed to load GeoJSON:", err));
 
-      // Mouse hover behavior
-      map.current.on("mouseenter", "countries-fill", (e) => {
-        map.current.getCanvas().style.cursor = "pointer";
-        const feature = e.features[0];
+      let currentHoveredCountry = null;
 
-        // Adjust this if your geojson uses a different property name
+      // Mouse hover behavior
+      const handleCountryHover = (e) => {
+        const feature = e.features[0];
         const countryCode = feature.properties.iso_a3_eh;
 
-        const country = countryData[countryCode];
+        // Only update if we're hovering over a different country
+        if (currentHoveredCountry !== countryCode) {
+          // Clear previous hover state
+          if (currentHoveredCountry) {
+            map.current.setPaintProperty("countries-hover", "fill-opacity", 0);
+          }
 
-        if (country) {
-          map.current.setFilter("countries-hover", [
-            "==",
-            "ISO_A3",
-            countryCode,
-          ]);
+          currentHoveredCountry = countryCode;
+          const country = countryData[countryCode];
 
-          const popupContent = `
-            <div class="popup-content">
-              <h3 class="popup-title">${country.name}</h3>
-              <p class="popup-word">"${country.word}"</p>
-            </div>
-          `;
-          popup.current
-            .setLngLat(e.lngLat)
-            .setHTML(popupContent)
-            .addTo(map.current);
+          if (country) {
+            map.current.setFilter("countries-hover", [
+              "==",
+              "iso_a3_eh",
+              countryCode,
+            ]);
+
+            map.current.setPaintProperty(
+              "countries-hover",
+              "fill-opacity",
+              0.2
+            );
+
+            const popupContent = `
+              <div class="popup-content">
+                <h3 class="popup-title">${country.name}</h3>
+                <p class="popup-word">"${country.word}"</p>
+              </div>
+            `;
+            popup.current
+              .setLngLat(e.lngLat)
+              .setHTML(popupContent)
+              .addTo(map.current);
+          }
         }
+      };
+
+      map.current.on("mouseenter", "countries-fill", (e) => {
+        map.current.getCanvas().style.cursor = "pointer";
+        handleCountryHover(e);
       });
+
+      map.current.on("mousemove", "countries-fill", handleCountryHover);
 
       // Mouse leave behavior
       map.current.on("mouseleave", "countries-fill", () => {
         map.current.getCanvas().style.cursor = "";
-        map.current.setFilter("countries-hover", ["==", "ISO_A3", ""]);
+        currentHoveredCountry = null;
+        map.current.setPaintProperty("countries-hover", "fill-opacity", 0);
+        setTimeout(() => {
+          map.current.setFilter("countries-hover", ["==", "iso_a3_eh", ""]);
+        }, 200);
         popup.current.remove();
       });
     });
@@ -164,9 +195,22 @@ const Map = () => {
           border: 1px solid rgba(255, 255, 255, 0.2);
           box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
           backdrop-filter: blur(10px);
+          transition: all 0.2s ease-in-out;
+          transform: scale(0.95);
+          opacity: 0;
+          animation: popupFadeIn 0.2s ease-out forwards;
         }
+        
+        @keyframes popupFadeIn {
+          to {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+        
         .country-popup .maplibregl-popup-tip {
           border-top-color: #667eea;
+          transition: all 0.2s ease-in-out;
         }
         .popup-content {
           padding: 12px 16px;
@@ -185,10 +229,6 @@ const Map = () => {
           opacity: 0.9;
         }
       `}</style>
-
-      <h1 className="text-4xl font-bold text-center mb-6 text-white">
-        🗺️ Interactive World Map
-      </h1>
 
       <div
         ref={mapContainer}
