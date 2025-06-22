@@ -5,12 +5,29 @@ import { useNavigate } from "react-router-dom";
 const SignUp = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Signup attempt:", { email, password });
-    navigate("/login");
+    setError("");
+    try {
+      const response = await fetch("http://localhost:8000/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      if (response.ok) {
+        navigate("/login");
+      } else {
+        const data = await response.json();
+        setError(data.detail || "Signup failed");
+      }
+    } catch (err) {
+      setError("Network error during signup");
+    }
   };
 
   return (
@@ -53,7 +70,7 @@ const SignUp = () => {
               </p>
             </div>
 
-            <div className="space-y-4">
+            <form className="space-y-4" onSubmit={handleSubmit}>
               {/* Email Input */}
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -84,15 +101,19 @@ const SignUp = () => {
                 />
               </div>
 
+              {/* Error Message */}
+              {error && (
+                <div className="text-red-400 text-sm text-center">{error}</div>
+              )}
+
               {/* Submit Button */}
               <button
                 type="submit"
-                onClick={handleSubmit}
                 className="w-full py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl hover:shadow-purple-500/25 hover:cursor-pointer mt-6"
               >
                 Sign up
               </button>
-            </div>
+            </form>
           </div>
         </div>
       </div>

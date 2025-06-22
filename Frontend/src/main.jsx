@@ -5,35 +5,31 @@ import {
   Navigate,
   RouterProvider,
 } from "react-router-dom";
-import { Loader2 } from "lucide-react"; // Added missing import
+import { Loader2 } from "lucide-react";
 import "./index.css";
 
-// Components
+// Layout & Pages
 import Layout from "./components/Layout";
-
-// Pages
 import SignUp from "./pages/SignUpPage/SignUp";
 import LogIn from "./pages/LogInPage/LogIn";
 import DashboardPage from "./pages/DashboardPage/DashboardPage";
 import TrendPage from "./pages/TrendPage/TrendPage";
 import MainAlertPage from "./pages/AlertPage/MainAlertPage";
+import AlertSubPage from "./pages/AlertPage/AlertSubPage"; 
 
-// Loading component
+// Loading fallback
 const LoadingFallback = () => (
   <div className="flex justify-center items-center h-screen bg-gray-950">
     <Loader2 className="animate-spin text-white" size={24} />
   </div>
 );
 
-// Router configuration
+// Router config
 const router = createBrowserRouter([
-  // Root redirect
   {
     path: "/",
     element: <Navigate to="/signup" replace />,
   },
-
-  // Auth routes
   {
     path: "/signup",
     element: <SignUp />,
@@ -47,10 +43,7 @@ const router = createBrowserRouter([
     element: <Layout />,
     errorElement: <LoadingFallback />,
     children: [
-      {
-        index: true,
-        element: <Navigate to="/app/dashboard" replace />,
-      },
+      { index: true, element: <Navigate to="dashboard" replace /> },
       {
         path: "dashboard",
         element: <DashboardPage />,
@@ -60,12 +53,15 @@ const router = createBrowserRouter([
         element: <MainAlertPage />,
       },
       {
+        path: "alerts/:id",
+        element: <AlertSubPage />,        
+      },
+      {
         path: "trends",
         element: <TrendPage />,
       },
     ],
   },
-
   {
     path: "*",
     element: <Navigate to="/signup" replace />,
