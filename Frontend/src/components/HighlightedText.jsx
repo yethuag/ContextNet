@@ -7,14 +7,21 @@ import React from 'react';
  */
 export default function HighlightedText({ text, entities }) {
   // Map each label to a bg/text color combo:
-  const ENTITY_COLORS = {
-    PERSON:  'bg-green-200 text-green-800',
-    ORG:     'bg-blue-200  text-blue-800',
-    GPE:     'bg-purple-200 text-purple-800',
-    LOC:     'bg-yellow-200 text-yellow-800',
-    TIME:    'bg-orange-200 text-orange-800',
-    PRODUCT: 'bg-pink-200   text-pink-800',
-    default: 'bg-gray-200   text-gray-800',
+    const ENTITY_COLORS = {
+    PERSON:      'bg-green-200 text-green-800',
+    ORG:         'bg-blue-200 text-blue-800',
+    GPE:         'bg-purple-200 text-purple-800',
+    LOC:         'bg-yellow-200 text-yellow-800',
+    TIME:        'bg-orange-200 text-orange-800',
+    PRODUCT:     'bg-pink-200 text-pink-800',
+    NORP:        'bg-indigo-200 text-indigo-800',
+    CARDINAL:    'bg-gray-200 text-gray-800',
+    VIOLENT_ACT: 'bg-red-200 text-red-800',
+    FAC:         'bg-teal-200 text-teal-800',
+    DATE:        'bg-green-100 text-green-900',
+    ORDINAL:     'bg-yellow-100 text-yellow-900',
+    WORK_OF_ART: 'bg-red-100 text-red-900',
+    default:     'bg-gray-200 text-gray-800',
   };
 
   // Escape regex metacharacters in a string
