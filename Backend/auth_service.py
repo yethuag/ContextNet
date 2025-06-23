@@ -14,7 +14,9 @@ from passlib.context import CryptContext
 from sqlalchemy import Column, String, DateTime, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from dotenv import load_dotenv
 
+load_dotenv()
 # --- Environment & Config ---
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key")
 ALGORITHM = "HS256"

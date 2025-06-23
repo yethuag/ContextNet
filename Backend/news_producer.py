@@ -30,9 +30,6 @@ def get_severity_band(score: float) -> str:
 
 
 def load_config() -> dict:
-    """
-    Load environment variables from .env and return configuration dict.
-    """
     load_dotenv() 
 
     rss_raw = os.getenv(
@@ -62,9 +59,6 @@ def load_config() -> dict:
 def make_producer(bootstrap: str,
                   api_key: str,
                   api_secret: str) -> Producer:
-    """
-    Create and return a configured Kafka Producer.
-    """
     config = {
         "bootstrap.servers": bootstrap,
         "security.protocol": "SASL_SSL",
