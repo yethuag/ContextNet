@@ -7,6 +7,20 @@ const severityColor = {
   high:   "bg-red-900/20 text-red-400 border-red-700/50",
 };
 
+// Map NER labels to Tailwind bg/text color combos
+const entityLabelStyles = {
+  PERSON:   "bg-green-200 text-green-800",
+  ORG:      "bg-blue-200 text-blue-800",
+  GPE:      "bg-purple-200 text-purple-800",
+  LOC:      "bg-yellow-200 text-yellow-800",
+  TIME:     "bg-orange-200 text-orange-800",
+  PRODUCT:  "bg-pink-200 text-pink-800",
+  NORP:     "bg-indigo-200 text-indigo-800",
+  CARDINAL: "bg-gray-200 text-gray-800",
+  VIOLENT_ACT: "bg-red-200 text-red-800",
+  default:  "bg-gray-200 text-gray-800",
+};
+
 const TagsList = ({ alerts }) => {
   // Aggregate by activity and collect entities
   const map = {};
@@ -16,15 +30,17 @@ const TagsList = ({ alerts }) => {
     const ents = alert.entities || [];
     (alert.activities || []).forEach((act) => {
       if (!map[act]) {
-        map[act] = { count: 0, maxSeverity: sev, entities: new Set() };
+        map[act] = { count: 0, maxSeverity: sev, entities: [] };
       }
       map[act].count += 1;
       if (severityRank[sev] > severityRank[map[act].maxSeverity]) {
         map[act].maxSeverity = sev;
       }
-      // Add all entity texts for this alert
+      // Add each entity object (avoid duplicates)
       ents.forEach((e) => {
-        map[act].entities.add(e.text);
+        if (!map[act].entities.some(x => x.text === e.text && x.label === e.label)) {
+          map[act].entities.push(e);
+        }
       });
     });
   });
@@ -37,7 +53,7 @@ const TagsList = ({ alerts }) => {
       count,
       maxSeverity,
       percentage: `${Math.round((count / alerts.length) * 100)}%`,
-      entities: Array.from(entities).slice(0, 5), // show up to 5 entities
+      entities: entities.slice(0, 5), // show up to 5
     }))
     .sort((a, b) => severityRank[b.maxSeverity] - severityRank[a.maxSeverity]);
 
@@ -80,15 +96,18 @@ const TagsList = ({ alerts }) => {
                 </td>
                 <td className="py-3 px-3 text-white">{r.percentage}</td>
                 <td className="py-3 px-3 text-white">{r.count}</td>
-                <td className="py-3 px-3 text-white">
-                  {r.entities.map((ent, idx) => (
-                    <span
-                      key={idx}
-                      className="inline-block bg-blue-700/20 text-blue-300 px-2 py-1 rounded-full text-xs mr-1 mb-1"
-                    >
-                      {ent}
-                    </span>
-                  ))}
+                <td className="py-3 px-3">
+                  {r.entities.map((ent, idx) => {
+                    const style = entityLabelStyles[ent.label] || entityLabelStyles.default;
+                    return (
+                      <span
+                        key={idx}
+                        className={`${style} inline-block px-2 py-1 rounded-full text-xs mr-1 mb-1`}
+                      >
+                        {ent.text}
+                      </span>
+                    );
+                  })}
                 </td>
               </tr>
             ))}
