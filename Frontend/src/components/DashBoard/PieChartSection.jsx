@@ -20,12 +20,15 @@ const PieChartSection = ({ alerts }) => {
     return acc;
   }, {});
 
-  // Prepare data array for recharts
-  const data = Object.entries(severityMap).map(([band, value]) => ({
-    name: band.charAt(0).toUpperCase() + band.slice(1),  // capitalize
-    value,
-    color: COLORS[band] || COLORS.low,
-  }));
+  // Only include high, medium, low
+  const allowedBands = ["high", "medium", "low"];
+  const data = Object.entries(severityMap)
+    .filter(([band]) => allowedBands.includes(band))
+    .map(([band, value]) => ({
+      name: band.charAt(0).toUpperCase() + band.slice(1),  // capitalize
+      value,
+      color: COLORS[band] || COLORS.low,
+    }));
 
   // Render
   return (

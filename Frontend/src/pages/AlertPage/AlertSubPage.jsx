@@ -37,6 +37,7 @@ const ENTITY_DESCRIPTIONS = {
   DATE:        'Dates or calendar references',
   ORDINAL:     '“First”, “2nd”, etc.',
   WORK_OF_ART:'Titles of works (books, songs, programs, etc.)',
+  WEAPON: 'Weapons, firearms, explosives',
 };
 
 export default function AlertSubPage() {
