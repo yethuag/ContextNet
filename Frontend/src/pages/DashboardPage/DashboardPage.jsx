@@ -19,7 +19,15 @@ const DashboardPage = () => {
       try {
         const res = await fetch(`${API_BASE}/alerts?date=${day}`);
         if (!res.ok) throw new Error(res.status);
-        setAlerts(await res.json());
+        const data = await res.json();
+
+        // Use the new_id if available, otherwise fall back to the old 'id'
+        const alertsWithCorrectId = data.map(alert => ({
+          ...alert,
+          id: alert.new_id || alert.id, // Use new_id if it's there, otherwise fallback to old id
+        }));
+
+        setAlerts(alertsWithCorrectId);
       } catch {
         setAlerts([]);
       }
