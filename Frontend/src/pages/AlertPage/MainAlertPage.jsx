@@ -27,6 +27,7 @@ export default function MainAlertPage() {
         const res = await fetch(`${API_BASE}/alerts?date=${day}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
+        console.log(data)
         setAlerts(data);
         setPage(1);
       } catch {

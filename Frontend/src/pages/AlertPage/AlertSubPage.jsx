@@ -41,20 +41,24 @@ const ENTITY_DESCRIPTIONS = {
 };
 
 export default function AlertSubPage() {
-  const { id } = useParams(); // new_id will be in the URL as `id`
+  const { new_id } = useParams();
   const navigate = useNavigate();
   const [alert, setAlert] = useState(null);
 
   useEffect(() => {
-    // Fetch the alert details based on the 'id' (new_id) from the URL
-    fetch(`${API_BASE}/alerts/${id}`)
-      .then(res => res.json())
+    fetch(`${API_BASE}/alerts/${new_id}`)
+      .then(res =>
+      {
+        console.log(res)
+        return res.json()
+      }
+    )
       .then(data => {
-        if (!data) return navigate('/app/alerts');  // Navigate back if no data found
-        setAlert(data);
+        if (!data) return navigate('/app/alerts');
+        return setAlert(data);
       })
-      .catch(() => navigate('/app/alerts'));  // Navigate back on error
-  }, [id, navigate]);
+      .catch(() => navigate('/app/alerts'));
+  }, [new_id, navigate]);
 
   if (!alert) {
     return <div className="flex items-center justify-center h-64">Loading…</div>;

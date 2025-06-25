@@ -8,7 +8,7 @@ import json
 from datetime import datetime, timedelta
 from typing import List, Optional
 from fastapi import Path
-
+from sqlalchemy.types import Uuid
 from fastapi import FastAPI, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -35,6 +35,7 @@ Base = declarative_base()
 class Alert(Base):
     __tablename__ = "alerts"
     id             = Column(Text, primary_key=True)
+    new_id         = Column(Uuid(as_uuid=False), nullable=False)
     source         = Column(Text)
     title          = Column(Text)
     summary        = Column(Text)
@@ -52,6 +53,7 @@ class Alert(Base):
 # ─── Pydantic schema for output ────────────────────────────────────────────────
 class AlertOut(BaseModel):
     id: str
+    new_id: str 
     source: str
     title: str
     summary: str
@@ -130,15 +132,33 @@ def list_alerts(
         out.append(rec)
     return out
 
-@app.get("/alerts/{alert_id}", response_model=AlertOut)
-def get_alert(alert_id: str, db=Depends(get_db)):
-    """
-    Fetch a single alert by its ID.
-    """
-    a = db.execute(select(Alert).where(Alert.id == alert_id)).scalar_one_or_none()
+# @app.get("/alerts/{alert_id}", response_model=AlertOut)
+# def get_alert(alert_id: str, db=Depends(get_db)):
+#     """
+#     Fetch a single alert by its ID.
+#     """
+#     a = db.execute(select(Alert).where(Alert.id == alert_id)).scalar_one_or_none()
+#     if not a:
+#         raise HTTPException(404, detail="Alert not found")
+#     # extract lon/lat
+#     lon = lat = None
+#     if a.geom:
+#         gj = db.execute(
+#             select(ST_AsGeoJSON(text("alerts.geom"))).where(Alert.id == a.id)
+#         ).scalar_one_or_none()
+#         if gj:
+#             c = json.loads(gj)["coordinates"]
+#             lon, lat = c[0], c[1]
+#     rec = AlertOut.from_orm(a).dict()
+#     rec.update({"lon": lon, "lat": lat})
+#     return rec
+
+
+@app.get("/alerts/{new_id}", response_model=AlertOut)
+def get_alert(new_id: str, db=Depends(get_db)):
+    a = db.execute(select(Alert).where(Alert.new_id == new_id)).scalar_one_or_none()
     if not a:
         raise HTTPException(404, detail="Alert not found")
-    # extract lon/lat
     lon = lat = None
     if a.geom:
         gj = db.execute(
@@ -148,7 +168,7 @@ def get_alert(alert_id: str, db=Depends(get_db)):
             c = json.loads(gj)["coordinates"]
             lon, lat = c[0], c[1]
     rec = AlertOut.from_orm(a).dict()
-    rec.update({"lon": lon, "lat": lat})
+    rec.update({"lon": lon, "lat": lat}) 
     return rec
 
 # ─── Endpoint: GeoJSON for map ─────────────────────────────────────────────────

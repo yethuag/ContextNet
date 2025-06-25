@@ -53,7 +53,7 @@ const router = createBrowserRouter([
         element: <MainAlertPage />,
       },
       {
-        path: "alerts/:id",
+        path: "alerts/:new_id",
         element: <AlertSubPage />,        
       },
       {
