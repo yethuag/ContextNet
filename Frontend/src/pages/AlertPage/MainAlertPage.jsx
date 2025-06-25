@@ -6,7 +6,7 @@ import DisplayCalender from "../../components/DisplayCalender";
 const API_BASE = "http://localhost:8001";
 const PAGE_SIZE = 7;
 
-// map each severity band to your chosen colors
+// Map each severity band to your chosen colors
 const SEVERITY_STYLES = {
   low:    "bg-green-900/20 text-green-400 border-green-700/50",
   medium: "bg-yellow-900/20 text-yellow-400 border-yellow-700/50",
@@ -44,8 +44,9 @@ export default function MainAlertPage() {
   const totalPages = Math.ceil(alerts.length / PAGE_SIZE);
   const paged = alerts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const openAlert = (id) => {
-    navigate(`/app/alerts/${encodeURIComponent(id)}`);
+  const openAlert = (new_id) => {
+    // Navigate to the alert details page using the new_id
+    navigate(`/app/alerts/${encodeURIComponent(new_id)}`);
   };
 
   return (
@@ -82,8 +83,8 @@ export default function MainAlertPage() {
               const sevStyle = SEVERITY_STYLES[sev] || SEVERITY_STYLES.low;
               return (
                 <li
-                  key={a.id}
-                  onClick={() => openAlert(a.id)}
+                  key={a.new_id} // Use new_id for the key
+                  onClick={() => openAlert(a.new_id)} // Pass new_id to navigate
                   className="bg-gray-800 rounded-lg p-4 shadow border border-gray-700 cursor-pointer hover:bg-gray-700 transition"
                 >
                   <div className="flex justify-between gap-4">
