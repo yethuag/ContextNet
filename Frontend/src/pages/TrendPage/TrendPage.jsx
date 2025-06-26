@@ -18,6 +18,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { format, differenceInCalendarDays } from "date-fns";
+import LoadingScreen from "../../components/LoadingScreen";
 
 const API = "http://localhost:8001";
 
@@ -178,6 +179,15 @@ export default function TrendPage() {
   // Process your data
   const result = smartEntityDedup(topEntities);
   console.log("Processed top entities:", result);
+
+  if (
+    result.length === 0 ||
+    counts.length === 0 ||
+    avgViolence.length === 0 ||
+    activities.length === 0
+  ) {
+    return <LoadingScreen />;
+  }
   return (
     <div className="p-6 space-y-8">
       {/* date range picker */}
