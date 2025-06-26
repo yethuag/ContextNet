@@ -8,7 +8,8 @@ import json
 from datetime import datetime, timedelta
 from typing import List, Optional
 from fastapi import Path
-from sqlalchemy.types import Uuid
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from uuid import UUID
 from fastapi import FastAPI, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -19,7 +20,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Text, DateTime, Numeric, JSON
 from sqlalchemy import func
 from dotenv import load_dotenv
-
+import requests
 # ─── Load environment & set up DB ─────────────────────────────────────────────
 load_dotenv()
 DATABASE_URL = os.getenv("PG_DSN")
@@ -35,7 +36,7 @@ Base = declarative_base()
 class Alert(Base):
     __tablename__ = "alerts"
     id             = Column(Text, primary_key=True)
-    new_id         = Column(Uuid(as_uuid=False), nullable=False)
+    new_id = Column(PG_UUID(as_uuid=True), nullable=False)
     source         = Column(Text)
     title          = Column(Text)
     summary        = Column(Text)
@@ -53,7 +54,7 @@ class Alert(Base):
 #pydantic model
 class AlertOut(BaseModel):
     id: str
-    new_id: str 
+    new_id: UUID
     source: str
     title: str
     summary: str
@@ -89,6 +90,17 @@ def get_db():
     finally:
         db.close()
 
+TONE_SERVICE_URL = "http://localhost:8002/infer" 
+
+def infer_tone(title: str, summary: str):
+    try:
+        full_text = f"{title} {summary}"
+        response = requests.post(TONE_SERVICE_URL, json={"text": full_text}, timeout=5)
+        if response.ok:
+            return response.json()
+    except Exception as e:
+        print(f"Tone Service error: {e}")
+    return None
 
 @app.get("/alerts", response_model=List[AlertOut])
 def list_alerts(
@@ -148,22 +160,30 @@ def list_alerts(
 #     return rec
 
 
-@app.get("/alerts/{new_id}", response_model=AlertOut)
+@app.get("/alerts/{new_id}")
 def get_alert(new_id: str, db=Depends(get_db)):
     a = db.execute(select(Alert).where(Alert.new_id == new_id)).scalar_one_or_none()
     if not a:
         raise HTTPException(404, detail="Alert not found")
+
     lon = lat = None
     if a.geom:
         gj = db.execute(
             select(ST_AsGeoJSON(text("alerts.geom"))).where(Alert.id == a.id)
         ).scalar_one_or_none()
         if gj:
-            c = json.loads(gj)["coordinates"]
-            lon, lat = c[0], c[1]
+            coords = json.loads(gj)["coordinates"]
+            lon, lat = coords[0], coords[1]
+
     rec = AlertOut.from_orm(a).dict()
-    rec.update({"lon": lon, "lat": lat}) 
+    rec.update({"lon": lon, "lat": lat})
+
+    # Call Tone Service only when alert details are requested
+    tone_result = infer_tone(a.title, a.summary)
+    rec["tone"] = tone_result or {}
+
     return rec
+
 
 # ─── Endpoint: GeoJSON for map ─────────────────────────────────────────────────
 @app.get("/map/geojson")

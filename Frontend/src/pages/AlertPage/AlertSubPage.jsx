@@ -5,7 +5,6 @@ import HighlightedText from '../../components/HighlightedText';
 
 const API_BASE = 'http://localhost:8001';
 
-// Style map for entities
 const ENTITY_STYLES = {
   PERSON: 'bg-green-200 text-green-800',
   ORG: 'bg-blue-200 text-blue-800',
@@ -20,6 +19,7 @@ const ENTITY_STYLES = {
   DATE: 'bg-green-100 text-green-900',
   ORDINAL: 'bg-yellow-100 text-yellow-900',
   WORK_OF_ART: 'bg-red-100 text-red-900',
+  WEAPON: 'bg-rose-200 text-rose-800',
   default: 'bg-gray-200 text-gray-800',
 };
 
@@ -40,6 +40,16 @@ const ENTITY_DESCRIPTIONS = {
   WEAPON: 'Weapons, firearms, explosives',
 };
 
+const TONE_COLORS = {
+  Positive: 'text-green-400',
+  Negative: 'text-red-400',
+  Neutral: 'text-gray-400',
+  Critical: 'text-yellow-400',
+  Sarcastic: 'text-pink-400',
+  'Passive-Aggressive': 'text-orange-400',
+  Offensive: 'text-red-500',
+};
+
 export default function AlertSubPage() {
   const { new_id } = useParams();
   const navigate = useNavigate();
@@ -47,15 +57,10 @@ export default function AlertSubPage() {
 
   useEffect(() => {
     fetch(`${API_BASE}/alerts/${new_id}`)
-      .then(res =>
-      {
-        console.log(res)
-        return res.json()
-      }
-    )
+      .then(res => res.json())
       .then(data => {
         if (!data) return navigate('/app/alerts');
-        return setAlert(data);
+        setAlert(data);
       })
       .catch(() => navigate('/app/alerts'));
   }, [new_id, navigate]);
@@ -64,14 +69,18 @@ export default function AlertSubPage() {
     return <div className="flex items-center justify-center h-64">Loading…</div>;
   }
 
-  // Handle missing 'lat' and 'lon'
-  const { title, source, summary, published_at, entities, activities, lat, lon } = alert;
-
-  // Handle case where 'published_at' is null or undefined
+  const { title, source, summary, published_at, entities, activities, tone } = alert;
   const formattedDate = published_at ? format(new Date(published_at), 'PPpp') : '—';
-
-  // Unique entity labels for the legend
   const uniqueLabels = Array.from(new Set(entities.map(e => e.label)));
+
+  // Determine dominant tone
+  let dominantTone = null;
+  if (tone?.labels && tone?.scores) {
+    const maxIdx = tone.scores.indexOf(Math.max(...tone.scores));
+    dominantTone = tone.labels[maxIdx];
+  }
+
+  const toneColor = TONE_COLORS[dominantTone] || 'text-white';
 
   return (
     <div className="bg-gray-900 min-h-screen p-6 text-gray-200">
@@ -84,12 +93,32 @@ export default function AlertSubPage() {
         {source} • {formattedDate}
       </div>
 
-      {/* Summary with highlights */}
       <div className="prose prose-invert mb-6">
         <HighlightedText text={summary} entities={entities} />
       </div>
 
-      {/* Detected Entities */}
+      {/* Tone Analysis */}
+      {tone?.labels && tone?.scores && (
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-2">Tone Inference</h2>
+          <ul>
+            {tone.labels.map((label, i) => (
+              <li key={i} className="flex justify-between border-b border-gray-700 py-1">
+                <span>{label}</span>
+                <span className="text-gray-400">{(tone.scores[i] * 100).toFixed(1)}%</span>
+              </li>
+            ))}
+          </ul>
+
+          {dominantTone && (
+            <div className={`mt-4 font-semibold ${toneColor}`}>
+              This article's dominant tone is: {dominantTone}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Entities */}
       <h2 className="text-xl font-semibold mb-2">Detected Entities</h2>
       <ul className="grid grid-cols-2 gap-2 mb-8">
         {entities.map((e, i) => {
@@ -120,7 +149,6 @@ export default function AlertSubPage() {
           );
         })}
       </div>
-
 
       {/* Activities */}
       <div className="mt-8">
