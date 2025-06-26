@@ -31,7 +31,7 @@ export default function MainAlertPage() {
   useEffect(() => {
     const fetchAlerts = async () => {
       setIsLoading(true);
-      const day = format(selectedDate, "yyyy-MM-dd");
+      const day = selectedDate.toISOString().slice(0, 10);
       try {
         const res = await fetch(`${API_BASE}/alerts?date=${day}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);

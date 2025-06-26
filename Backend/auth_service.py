@@ -142,6 +142,14 @@ def login_for_access_token(
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
+@app.post("/logout")
+def logout():
+    """
+    For JWT, logout is handled client-side by deleting the token.
+    This endpoint exists for frontend convenience.
+    """
+    return {"msg": "Logged out. Please remove the token on the client."}
+
 @app.get("/users/me")
 async def read_users_me(current_user: User = Depends(get_current_user)):
     return {"email": current_user.email, "created_at": current_user.created_at}
