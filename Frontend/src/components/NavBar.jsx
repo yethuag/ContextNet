@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   BarChart3,
   AlertTriangle,
@@ -9,14 +9,30 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const Navbar = () => {
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Extract the active tab from the current URL path
+  const getActiveTabFromPath = () => {
+    const path = location.pathname;
+    if (path.includes("/app/alerts")) return "alerts";
+    if (path.includes("/app/trends")) return "trends";
+    if (path.includes("/app/dashboard")) return "dashboard";
+    return "dashboard"; // default fallback
+  };
+
+  const [activeTab, setActiveTab] = useState(getActiveTabFromPath());
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const navigate = useNavigate();
+
+  // Update activeTab when location changes
+  useEffect(() => {
+    setActiveTab(getActiveTabFromPath());
+  }, [location.pathname]);
 
   const handleSignOut = () => {
     // Remove token from localStorage (or wherever you store it)
