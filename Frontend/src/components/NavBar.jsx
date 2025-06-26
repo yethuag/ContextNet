@@ -6,7 +6,13 @@ const Navbar = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [showUserMenu, setShowUserMenu] = useState(false);
   const navigate = useNavigate();
+  const handleSignOut = () => {
+    // Remove token from localStorage (or wherever you store it)
+    localStorage.removeItem("token");
 
+    // Redirect to login page
+    navigate("/login");
+  };
   const handleTabClick = (tabName) => {
     setActiveTab(tabName);
     navigate(`/app/${tabName}`);
@@ -114,7 +120,10 @@ const Navbar = () => {
                 Preferences
               </button>
               <hr className="border-gray-700 my-1" />
-              <button className="w-full px-4 py-2 text-left text-red-400 hover:text-red-300 hover:bg-gray-800 transition-colors duration-200">
+              <button
+                className="w-full px-4 py-2 text-left text-red-400 hover:text-red-300 hover:bg-gray-800 transition-colors duration-200"
+                onClick={handleSignOut}
+              >
                 Sign Out
               </button>
             </div>

@@ -132,7 +132,7 @@ export default function MainAlertPage() {
 
   useEffect(() => {
     const fetchAlerts = async () => {
-      const day = format(selectedDate, "yyyy-MM-dd");
+      const day = selectedDate.toISOString().slice(0, 10);
       const cacheKey = `alerts_${day}`;
 
       // Try to get data from cache first
