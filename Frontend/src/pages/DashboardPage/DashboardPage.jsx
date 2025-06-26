@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import LoadingScreen from "../../components/LoadingScreen";
 import DisplayCalender from "../../components/DisplayCalender";
 import MetricCards from "../../components/MetricCards";
 import TagsList from "../../components/DashBoard/DashBoardTagsList";
@@ -12,28 +13,29 @@ const DashboardPage = () => {
   const [alerts, setAlerts] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
+      setIsLoading(true);
       const day = format(selectedDate, "yyyy-MM-dd");
       try {
         const res = await fetch(`${API_BASE}/alerts?date=${day}`);
         if (!res.ok) throw new Error(res.status);
         const data = await res.json();
-
-        // Use the new_id if available, otherwise fall back to the old 'id'
-        const alertsWithCorrectId = data.map(alert => ({
+        const alertsWithCorrectId = data.map((alert) => ({
           ...alert,
-          id: alert.new_id || alert.id, // Use new_id if it's there, otherwise fallback to old id
+          id: alert.new_id || alert.id,
         }));
-
         setAlerts(alertsWithCorrectId);
       } catch {
         setAlerts([]);
       }
+      setIsLoading(false);
     })();
   }, [selectedDate]);
 
+  if (isLoading) return <LoadingScreen />;
   const handleDateChange = (date) => {
     setSelectedDate(date);
     setShowCalendar(false);
@@ -66,7 +68,7 @@ const DashboardPage = () => {
       {/* Three-column layout: 40% tag list, 50% map, 10% pie chart */}
       <div
         className="grid gap-5 mt-8"
-        style={{ gridTemplateColumns: '35% 45% 20%' }}
+        style={{ gridTemplateColumns: "35% 45% 20%" }}
       >
         {/* 1. Tags list */}
         <div className="min-h-[24rem]">
