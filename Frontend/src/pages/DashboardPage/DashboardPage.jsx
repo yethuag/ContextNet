@@ -11,8 +11,9 @@ const API_BASE = "http://localhost:8001";
 
 // Enhanced cache with sessionStorage persistence and in-memory fallback
 const inMemoryCache = new Map();
-const CACHE_DURATION = 30 * 60 * 1000;
+const CACHE_DURATION = 1 * 60 * 1000;
 const CACHE_PREFIX = "dashboard_alerts_";
+const TODAY = format(new Date(), "yyyy-MM-dd");
 
 // Check if sessionStorage is available
 const isSessionStorageAvailable = (() => {
@@ -35,9 +36,10 @@ const getCachedData = (key) => {
       const cached = sessionStorage.getItem(fullKey);
       if (cached) {
         const parsedData = JSON.parse(cached);
-        const isExpired = Date.now() - parsedData.timestamp > CACHE_DURATION;
 
-        if (isExpired) {
+        // Only check expiration for today's data
+        const isTodayData = key.includes(`alerts_${TODAY}`);
+        if (isTodayData && Date.now() - parsedData.timestamp > CACHE_DURATION) {
           sessionStorage.removeItem(fullKey);
           return null;
         }
@@ -50,8 +52,9 @@ const getCachedData = (key) => {
     const cached = inMemoryCache.get(fullKey);
     if (!cached) return null;
 
-    const isExpired = Date.now() - cached.timestamp > CACHE_DURATION;
-    if (isExpired) {
+    // Only check expiration for today's data
+    const isTodayData = key.includes(`alerts_${TODAY}`);
+    if (isTodayData && Date.now() - cached.timestamp > CACHE_DURATION) {
       inMemoryCache.delete(fullKey);
       return null;
     }
