@@ -15,6 +15,7 @@ const SEVERITY_STYLES = {
 };
 
 export default function MainAlertPage() {
+  const navigate = useNavigate();
   const [alerts, setAlerts] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
