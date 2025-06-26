@@ -4,6 +4,7 @@ import {
   createBrowserRouter,
   Navigate,
   RouterProvider,
+  useLocation,
 } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import "./index.css";
@@ -15,7 +16,32 @@ import LogIn from "./pages/LogInPage/LogIn";
 import DashboardPage from "./pages/DashboardPage/DashboardPage";
 import TrendPage from "./pages/TrendPage/TrendPage";
 import MainAlertPage from "./pages/AlertPage/MainAlertPage";
-import AlertSubPage from "./pages/AlertPage/AlertSubPage"; 
+import AlertSubPage from "./pages/AlertPage/AlertSubPage";
+
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const location = useLocation();
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    // Redirect to login page but save the attempted location
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return children;
+};
+
+// Public Route Component (for login/signup pages)
+const PublicRoute = ({ children }) => {
+  const token = localStorage.getItem("token");
+
+  if (token) {
+    // If already logged in, redirect to dashboard
+    return <Navigate to="/app/dashboard" replace />;
+  }
+
+  return children;
+};
 
 // Loading fallback
 const LoadingFallback = () => (
@@ -28,19 +54,31 @@ const LoadingFallback = () => (
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Navigate to="/signup" replace />,
+    element: <Navigate to="/login" replace />,
   },
   {
     path: "/signup",
-    element: <SignUp />,
+    element: (
+      <PublicRoute>
+        <SignUp />
+      </PublicRoute>
+    ),
   },
   {
     path: "/login",
-    element: <LogIn />,
+    element: (
+      <PublicRoute>
+        <LogIn />
+      </PublicRoute>
+    ),
   },
   {
     path: "/app",
-    element: <Layout />,
+    element: (
+      <ProtectedRoute>
+        <Layout />
+      </ProtectedRoute>
+    ),
     errorElement: <LoadingFallback />,
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
@@ -54,7 +92,7 @@ const router = createBrowserRouter([
       },
       {
         path: "alerts/:new_id",
-        element: <AlertSubPage />,        
+        element: <AlertSubPage />,
       },
       {
         path: "trends",
@@ -64,7 +102,7 @@ const router = createBrowserRouter([
   },
   {
     path: "*",
-    element: <Navigate to="/signup" replace />,
+    element: <Navigate to="/login" replace />,
   },
 ]);
 

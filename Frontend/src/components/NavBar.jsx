@@ -35,11 +35,11 @@ const Navbar = () => {
   }, [location.pathname]);
 
   const handleSignOut = () => {
-    // Remove token from localStorage (or wherever you store it)
+    // Remove all auth-related data
     localStorage.removeItem("token");
 
-    // Redirect to login page
-    navigate("/login");
+    // Navigate to login with replace
+    navigate("/login", { replace: true });
   };
 
   const handleTabClick = (tabName) => {

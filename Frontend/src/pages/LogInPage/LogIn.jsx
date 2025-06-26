@@ -24,7 +24,7 @@ const LogIn = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        // Optionally store token: localStorage.setItem("token", data.access_token);
+        localStorage.setItem("token", data.access_token);
         navigate("/app/dashboard");
       } else {
         const data = await response.json();
