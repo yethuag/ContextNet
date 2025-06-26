@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import LoadingScreen from "../../components/LoadingScreen";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import DisplayCalender from "../../components/DisplayCalender";
@@ -8,9 +9,9 @@ const PAGE_SIZE = 7;
 
 // Map each severity band to your chosen colors
 const SEVERITY_STYLES = {
-  low:    "bg-green-900/20 text-green-400 border-green-700/50",
+  low: "bg-green-900/20 text-green-400 border-green-700/50",
   medium: "bg-yellow-900/20 text-yellow-400 border-yellow-700/50",
-  high:   "bg-red-900/20   text-red-400   border-red-700/50",
+  high: "bg-red-900/20   text-red-400   border-red-700/50",
 };
 
 export default function MainAlertPage() {
@@ -18,25 +19,27 @@ export default function MainAlertPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
   const [page, setPage] = useState(1);
-  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchAlerts = async () => {
+      setIsLoading(true);
       const day = format(selectedDate, "yyyy-MM-dd");
       try {
         const res = await fetch(`${API_BASE}/alerts?date=${day}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        console.log(data)
         setAlerts(data);
         setPage(1);
       } catch {
         setAlerts([]);
       }
+      setIsLoading(false);
     };
     fetchAlerts();
   }, [selectedDate]);
 
+  if (isLoading) return <LoadingScreen />;
   const handleDateChange = (d) => {
     setSelectedDate(d);
     setShowCalendar(false);

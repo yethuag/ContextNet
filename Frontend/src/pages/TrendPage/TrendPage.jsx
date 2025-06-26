@@ -1,12 +1,21 @@
 // src/pages/TrendPage/TrendPage.jsx
 import React, { useEffect, useState } from "react";
+import LoadingScreen from "../../components/LoadingScreen";
 import {
   ResponsiveContainer,
-  LineChart, Line,
-  AreaChart, Area,
-  XAxis, YAxis, Tooltip, Legend,
-  BarChart, Bar,
-  PieChart, Pie, Cell
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 import { format, differenceInCalendarDays } from "date-fns";
 
@@ -19,52 +28,69 @@ export default function TrendPage() {
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
 
   const [startDate, setStartDate] = useState(thirtyDaysAgo);
-  const [endDate, setEndDate]     = useState(today);
+  const [endDate, setEndDate] = useState(today);
 
   // computed days span (inclusive)
-  const spanDays =
-    differenceInCalendarDays(endDate, startDate) + 1;
+  const spanDays = differenceInCalendarDays(endDate, startDate) + 1;
 
   // data for charts
-  const [counts,       setCounts]       = useState([]);
-  const [avgViolence,  setAvgViolence]  = useState([]);
-  const [activities,   setActivities]   = useState([]);
-  const [topEntities,  setTopEntities]  = useState([]);
-  const [severity,     setSeverity]     = useState([]);
+  const [counts, setCounts] = useState([]);
+  const [avgViolence, setAvgViolence] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [topEntities, setTopEntities] = useState([]);
+  const [severity, setSeverity] = useState([]);
 
   // whenever spanDays changes, refetch time-series stats
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Add new state for static data loading
+  const [isStaticDataLoading, setIsStaticDataLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   useEffect(() => {
+    setIsLoading(true);
+    setError(null);
     const d = spanDays;
-    fetch(`${API}/stats/counts?days=${d}`)
-      .then(r => r.json())
-      .then(setCounts)
-      .catch(console.error);
-
-    fetch(`${API}/stats/avg_violence?days=${d}`)
-      .then(r => r.json())
-      .then(setAvgViolence)
-      .catch(console.error);
-
-    fetch(`${API}/stats/activities?days=${d}`)
-      .then(r => r.json())
-      .then(setActivities)
-      .catch(console.error);
+    Promise.all([
+      fetch(`${API}/stats/counts?days=${d}`).then((r) => r.json()),
+      fetch(`${API}/stats/avg_violence?days=${d}`).then((r) => r.json()),
+      fetch(`${API}/stats/activities?days=${d}`).then((r) => r.json()),
+    ])
+      .then(([countsData, violenceData, activitiesData]) => {
+        setCounts(countsData);
+        setAvgViolence(violenceData);
+        setActivities(activitiesData);
+        setIsLoading(false);
+      })
+      .catch((error) => {
+        console.error(error);
+        setError("Failed to load trend data. Please try again later.");
+        setIsLoading(false);
+      });
   }, [spanDays]);
 
-  // on mount only, fetch static charts
   useEffect(() => {
-    fetch(API + "/stats/top_entities")
-      .then(r => r.json())
-      .then(setTopEntities)
-      .catch(console.error);
-
-    fetch(API + "/stats/severity")
-      .then(r => r.json())
-      .then(setSeverity)
-      .catch(console.error);
+    setIsStaticDataLoading(true);
+    Promise.all([
+      fetch(API + "/stats/top_entities").then((r) => r.json()),
+      fetch(API + "/stats/severity").then((r) => r.json()),
+    ])
+      .then(([entitiesData, severityData]) => {
+        setTopEntities(entitiesData);
+        setSeverity(severityData);
+        setIsStaticDataLoading(false);
+      })
+      .catch((error) => {
+        console.error(error);
+        setError("Failed to load static data. Please try again later.");
+        setIsStaticDataLoading(false);
+      });
   }, []);
 
-  const sevColors = { low:"#34D399", medium:"#FBBF24", high:"#F87171" };
+  if (isLoading || isStaticDataLoading) return <LoadingScreen />;
+  if (error) return <div className="p-6 text-red-500">{error}</div>;
+
+  const sevColors = { low: "#34D399", medium: "#FBBF24", high: "#F87171" };
 
   return (
     <div className="p-6 space-y-8">
@@ -75,7 +101,7 @@ export default function TrendPage() {
           <input
             type="date"
             value={format(startDate, "yyyy-MM-dd")}
-            onChange={e => setStartDate(new Date(e.target.value))}
+            onChange={(e) => setStartDate(new Date(e.target.value))}
             className="rounded bg-gray-800 text-white p-1"
             max={format(endDate, "yyyy-MM-dd")}
           />
@@ -85,38 +111,47 @@ export default function TrendPage() {
           <input
             type="date"
             value={format(endDate, "yyyy-MM-dd")}
-            onChange={e => setEndDate(new Date(e.target.value))}
+            onChange={(e) => setEndDate(new Date(e.target.value))}
             className="rounded bg-gray-800 text-white p-1"
             min={format(startDate, "yyyy-MM-dd")}
             max={format(new Date(), "yyyy-MM-dd")}
           />
         </label>
         <span className="text-gray-400">
-          ({spanDays} day{spanDays>1?'s':''})
+          ({spanDays} day{spanDays > 1 ? "s" : ""})
         </span>
       </div>
 
       {/* 1. Alerts-per-day */}
       <section>
-        <h2 className="text-xl font-semibold mb-2 text-white">Alerts Per Day</h2>
+        <h2 className="text-xl font-semibold mb-2 text-white">
+          Alerts Per Day
+        </h2>
         <ResponsiveContainer width="100%" height={180}>
           <LineChart data={counts}>
             <XAxis dataKey="date" stroke="#ccc" />
             <YAxis allowDecimals={false} stroke="#ccc" />
             <Tooltip />
-            <Line type="monotone" dataKey="count" stroke="#60A5FA" dot={false} />
+            <Line
+              type="monotone"
+              dataKey="count"
+              stroke="#60A5FA"
+              dot={false}
+            />
           </LineChart>
         </ResponsiveContainer>
       </section>
 
       {/* 2. Avg violence score */}
       <section>
-        <h2 className="text-xl font-semibold mb-2 text-white">Avg. Violence Score</h2>
+        <h2 className="text-xl font-semibold mb-2 text-white">
+          Avg. Violence Score
+        </h2>
         <ResponsiveContainer width="100%" height={180}>
           <AreaChart data={avgViolence}>
             <XAxis dataKey="date" stroke="#ccc" />
-            <YAxis domain={[0,1]} stroke="#ccc" />
-            <Tooltip formatter={v => v.toFixed(2)} />
+            <YAxis domain={[0, 1]} stroke="#ccc" />
+            <Tooltip formatter={(v) => v.toFixed(2)} />
             <Area
               type="monotone"
               dataKey="avg_score"
@@ -130,7 +165,9 @@ export default function TrendPage() {
 
       {/* 3. Stacked area activities */}
       <section>
-        <h2 className="text-xl font-semibold mb-2 text-white">Activities by Day</h2>
+        <h2 className="text-xl font-semibold mb-2 text-white">
+          Activities by Day
+        </h2>
         <ResponsiveContainer width="100%" height={180}>
           <AreaChart data={activities}>
             <XAxis dataKey="date" stroke="#ccc" />
@@ -139,18 +176,17 @@ export default function TrendPage() {
             <Legend />
             {activities[0] &&
               Object.keys(activities[0])
-                .filter(k => k !== "date")
+                .filter((k) => k !== "date")
                 .map((act, i) => (
                   <Area
                     key={act}
                     stackId="1"
                     dataKey={act}
-                    stroke={["#F87171","#60A5FA","#FBBF24","#34D399"][i%4]}
-                    fill={["#F87171","#60A5FA","#FBBF24","#34D399"][i%4]}
+                    stroke={["#F87171", "#60A5FA", "#FBBF24", "#34D399"][i % 4]}
+                    fill={["#F87171", "#60A5FA", "#FBBF24", "#34D399"][i % 4]}
                     fillOpacity={0.4}
                   />
-                ))
-            }
+                ))}
           </AreaChart>
         </ResponsiveContainer>
       </section>
@@ -170,45 +206,47 @@ export default function TrendPage() {
 
       {/* 5. Severity donut */}
       <section>
-  <h2 className="text-xl font-semibold mb-2 text-white">
-    Severity Distribution
-  </h2>
-  <ResponsiveContainer width="100%" height={180}>
-    <PieChart>
-      {(() => {
-        const filtered = severity.filter(s =>
-          ['low','medium','high'].includes(s.severity_band)
-        );
-        return (
-          <Pie
-            data={filtered}
-            dataKey="count"
-            nameKey="severity_band"
-            innerRadius={40}
-            outerRadius={70}
-            label={({ percent, name }) =>
-              `${name} ${(percent * 100).toFixed(0)}%`
-            }
-          >
-            {filtered.map((s, i) => (
-              <Cell key={s.severity_band} fill={sevColors[s.severity_band]} />
-            ))}
-          </Pie>
-        );
-      })()}
-      <Legend
-        verticalAlign="bottom"
-        payload={['low','medium','high'].map((band) => ({
-          value: band.charAt(0).toUpperCase() + band.slice(1),
-          type: 'square',
-          id: band,
-          color: sevColors[band],
-        }))}
-      />
-    </PieChart>
-  </ResponsiveContainer>
-</section>
-
+        <h2 className="text-xl font-semibold mb-2 text-white">
+          Severity Distribution
+        </h2>
+        <ResponsiveContainer width="100%" height={180}>
+          <PieChart>
+            {(() => {
+              const filtered = severity.filter((s) =>
+                ["low", "medium", "high"].includes(s.severity_band)
+              );
+              return (
+                <Pie
+                  data={filtered}
+                  dataKey="count"
+                  nameKey="severity_band"
+                  innerRadius={40}
+                  outerRadius={70}
+                  label={({ percent, name }) =>
+                    `${name} ${(percent * 100).toFixed(0)}%`
+                  }
+                >
+                  {filtered.map((s, i) => (
+                    <Cell
+                      key={s.severity_band}
+                      fill={sevColors[s.severity_band]}
+                    />
+                  ))}
+                </Pie>
+              );
+            })()}
+            <Legend
+              verticalAlign="bottom"
+              payload={["low", "medium", "high"].map((band) => ({
+                value: band.charAt(0).toUpperCase() + band.slice(1),
+                type: "square",
+                id: band,
+                color: sevColors[band],
+              }))}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </section>
     </div>
   );
 }
