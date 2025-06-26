@@ -21,13 +21,26 @@ const LeafletMap = ({ date }) => {
     <MapContainer
       center={[20, 0]}
       zoom={2}
-      style={{ height: "600px", borderRadius: "1rem" }}
+      minZoom={2}
+      maxZoom={6}
       scrollWheelZoom={true}
+      style={{ height: "min(600px, 60vh)", borderRadius: "1rem" }}
+      worldCopyJump={false}
+      maxBoundsViscosity={1.0}
+      maxBounds={[
+        [-90, -180],
+        [90, 180],
+      ]}
+      bounds={[
+        [-60, -170],
+        [80, 170],
+      ]}
     >
       {/* Dark Matter basemap */}
       <TileLayer
         url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         attribution='&copy; <a href="https://carto.com/attributions">CARTO</a> &mdash; &copy; OpenStreetMap contributors'
+        noWrap={true}
       />
 
       {features.map((feat) => {
