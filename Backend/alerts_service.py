@@ -95,7 +95,7 @@ TONE_SERVICE_URL = "http://localhost:8002/infer"
 def infer_tone(title: str, summary: str):
     try:
         full_text = f"{title} {summary}"
-        response = requests.post(TONE_SERVICE_URL, json={"text": full_text}, timeout=5)
+        response = requests.post(TONE_SERVICE_URL, json={"text": full_text}, timeout=30)
         if response.ok:
             return response.json()
     except Exception as e:
