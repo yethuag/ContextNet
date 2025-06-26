@@ -1,13 +1,12 @@
-import React, { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import LoadingScreen from "../../components/LoadingScreen";
 import { format } from "date-fns";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import DisplayCalender from "../../components/DisplayCalender";
 
 const API_BASE = "http://localhost:8001";
 const PAGE_SIZE = 7;
 
-// Map each severity band to your chosen colors
 const SEVERITY_STYLES = {
   low: "bg-green-900/20 text-green-400 border-green-700/50",
   medium: "bg-yellow-900/20 text-yellow-400 border-yellow-700/50",
@@ -17,10 +16,16 @@ const SEVERITY_STYLES = {
 
 export default function MainAlertPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const dateParam = params.get("date");
+  const pageParam = parseInt(params.get("page")) || 1;
+  const initialDate = dateParam ? new Date(dateParam) : new Date();
+
   const [alerts, setAlerts] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(initialDate);
   const [showCalendar, setShowCalendar] = useState(false);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(pageParam);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -32,7 +37,6 @@ export default function MainAlertPage() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setAlerts(data);
-        setPage(1);
       } catch {
         setAlerts([]);
       }
@@ -41,19 +45,35 @@ export default function MainAlertPage() {
     fetchAlerts();
   }, [selectedDate]);
 
-  if (isLoading) return <LoadingScreen />;
+  useEffect(() => {
+    setPage(pageParam);
+  }, [pageParam]);
+
   const handleDateChange = (d) => {
     setSelectedDate(d);
     setShowCalendar(false);
+    setPage(1);
+    navigate(`?date=${format(d, "yyyy-MM-dd")}&page=1`);
   };
 
   const totalPages = Math.ceil(alerts.length / PAGE_SIZE);
   const paged = alerts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const openAlert = (new_id) => {
-    // Navigate to the alert details page using the new_id
-    navigate(`/app/alerts/${encodeURIComponent(new_id)}`);
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+    navigate(`?date=${format(selectedDate, "yyyy-MM-dd")}&page=${newPage}`);
   };
+
+  const openAlert = (new_id) => {
+    navigate(
+      `/app/alerts/${encodeURIComponent(new_id)}?date=${format(
+        selectedDate,
+        "yyyy-MM-dd"
+      )}&page=${page}`
+    );
+  };
+
+  if (isLoading) return <LoadingScreen />;
 
   return (
     <div className="p-6">
@@ -89,8 +109,8 @@ export default function MainAlertPage() {
               const sevStyle = SEVERITY_STYLES[sev] || SEVERITY_STYLES.low;
               return (
                 <li
-                  key={a.new_id} // Use new_id for the key
-                  onClick={() => openAlert(a.new_id)} // Pass new_id to navigate
+                  key={a.new_id}
+                  onClick={() => openAlert(a.new_id)}
                   className="bg-gray-800 rounded-lg p-4 shadow border border-gray-700 cursor-pointer hover:bg-gray-700 transition"
                 >
                   <div className="flex justify-between gap-4">
@@ -123,7 +143,7 @@ export default function MainAlertPage() {
           {totalPages > 1 && (
             <div className="flex justify-center items-center gap-2 mt-6">
               <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                onClick={() => handlePageChange(Math.max(1, page - 1))}
                 disabled={page === 1}
                 className="px-3 py-1 rounded bg-gray-700 text-white disabled:opacity-50"
               >
@@ -133,7 +153,7 @@ export default function MainAlertPage() {
                 Page {page} of {totalPages}
               </span>
               <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
                 disabled={page === totalPages}
                 className="px-3 py-1 rounded bg-gray-700 text-white disabled:opacity-50"
               >

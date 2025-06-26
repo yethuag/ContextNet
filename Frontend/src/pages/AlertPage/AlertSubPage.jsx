@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import HighlightedText from "../../components/HighlightedText";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 
 const API_BASE = "http://localhost:8001";
 
@@ -37,7 +37,7 @@ const ENTITY_DESCRIPTIONS = {
   ORG: "Companies, agencies, institutions, etc.",
   GPE: "Countries, cities, states.",
   LOC: "Non-GPE locations, mountain ranges, bodies of water.",
-  PRODUCT: "Objects, vehicles, foods, etc. (Not services.)",
+  PRODUCT: "Objects, vehicles, foods, etc.",
   EVENT: "Named hurricanes, battles, wars, sports events, etc.",
   WORK_OF_ART: "Titles of books, songs, programs, etc.",
   LAW: "Named documents made into laws.",
@@ -67,7 +67,12 @@ const TONE_COLORS = {
 export default function AlertSubPage() {
   const { new_id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [alert, setAlert] = useState(null);
+
+  const params = new URLSearchParams(location.search);
+  const dateParam = params.get("date");
+  const pageParam = params.get("page");
 
   useEffect(() => {
     fetch(`${API_BASE}/alerts/${new_id}`)
@@ -85,11 +90,8 @@ export default function AlertSubPage() {
     );
   }
 
-  const { title, source, summary, published_at, entities, activities, tone } =
-    alert;
-  const formattedDate = published_at
-    ? format(new Date(published_at), "PPpp")
-    : "—";
+  const { title, source, summary, published_at, entities, activities, tone } = alert;
+  const formattedDate = published_at ? format(new Date(published_at), "PPpp") : "—";
   const uniqueLabels = Array.from(new Set(entities.map((e) => e.label)));
 
   // Determine dominant tone
@@ -104,7 +106,12 @@ export default function AlertSubPage() {
   return (
     <div className="bg-gray-900 min-h-screen p-6 text-gray-200">
       <button
-        onClick={() => navigate(-1)}
+        onClick={() => {
+          const urlParams = new URLSearchParams();
+          if (dateParam) urlParams.set("date", dateParam);
+          if (pageParam) urlParams.set("page", pageParam);
+          navigate(`/app/alerts?${urlParams.toString()}`);
+        }}
         className="text-white mb-4 underline"
       >
         ← Back to Alerts
@@ -128,10 +135,7 @@ export default function AlertSubPage() {
           <h2 className="text-xl font-semibold mb-2">Tone Inference</h2>
           <ul>
             {tone.labels.map((label, i) => (
-              <li
-                key={i}
-                className="flex justify-between border-b border-gray-700 py-1"
-              >
+              <li key={i} className="flex justify-between border-b border-gray-700 py-1">
                 <span>{label}</span>
                 <span className="text-gray-400">
                   {(tone.scores[i] * 100).toFixed(1)}%
@@ -139,7 +143,6 @@ export default function AlertSubPage() {
               </li>
             ))}
           </ul>
-
           {dominantTone && (
             <div className={`mt-4 font-semibold ${toneColor}`}>
               This article's dominant tone is: {dominantTone}
@@ -154,10 +157,7 @@ export default function AlertSubPage() {
         {entities.map((e, i) => {
           const style = ENTITY_STYLES[e.label] || ENTITY_STYLES.default;
           return (
-            <li
-              key={i}
-              className={`${style} flex justify-between items-center px-3 py-1 rounded`}
-            >
+            <li key={i} className={`${style} flex justify-between items-center px-3 py-1 rounded`}>
               <span>{e.text}</span>
               <span className="text-xs font-medium">{e.label}</span>
             </li>
