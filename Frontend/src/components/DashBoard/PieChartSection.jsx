@@ -39,7 +39,7 @@ const PieChartSection = ({ alerts }) => {
 
   // Render
   return (
-    <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
+    <div className="bg-gray-800 h-full p-6 rounded-xl border border-gray-700">
       <div className="flex justify-between items-center mb-2">
         <h3 className="text-white text-xl font-bold">Severity Distribution</h3>
       </div>

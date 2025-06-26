@@ -20,8 +20,8 @@ const LeafletMap = ({ date }) => {
   return (
     <MapContainer
       center={[20, 0]}
-      zoom={2}
-      minZoom={2}
+      zoom={3}
+      minZoom={3}
       maxZoom={6}
       scrollWheelZoom={true}
       style={{ height: "min(600px, 60vh)", borderRadius: "1rem" }}
@@ -40,7 +40,7 @@ const LeafletMap = ({ date }) => {
       <TileLayer
         url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         attribution='&copy; <a href="https://carto.com/attributions">CARTO</a> &mdash; &copy; OpenStreetMap contributors'
-        noWrap={true}
+        // noWrap={true}
       />
 
       {features.map((feat) => {

@@ -7,6 +7,106 @@ import DisplayCalender from "../../components/DisplayCalender";
 const API_BASE = "http://localhost:8001";
 const PAGE_SIZE = 7;
 
+// Enhanced cache with sessionStorage persistence and in-memory fallback
+const inMemoryCache = new Map();
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes for today's data
+const CACHE_PREFIX = "alerts_page_";
+const TODAY = format(new Date(), "yyyy-MM-dd");
+
+// Check if sessionStorage is available
+const isSessionStorageAvailable = (() => {
+  try {
+    const test = "__storage_test__";
+    sessionStorage.setItem(test, test);
+    sessionStorage.removeItem(test);
+    return true;
+  } catch {
+    return false;
+  }
+})();
+
+const getCachedData = (key) => {
+  const fullKey = CACHE_PREFIX + key;
+
+  try {
+    // Try sessionStorage first
+    if (isSessionStorageAvailable) {
+      const cached = sessionStorage.getItem(fullKey);
+      if (cached) {
+        const parsedData = JSON.parse(cached);
+
+        // Only check expiration for today's data
+        const isTodayData = key.includes(`alerts_${TODAY}`);
+        if (isTodayData && Date.now() - parsedData.timestamp > CACHE_DURATION) {
+          sessionStorage.removeItem(fullKey);
+          return null;
+        }
+
+        return parsedData.data;
+      }
+    }
+
+    // Fallback to in-memory cache
+    const cached = inMemoryCache.get(fullKey);
+    if (!cached) return null;
+
+    // Only check expiration for today's data
+    const isTodayData = key.includes(`alerts_${TODAY}`);
+    if (isTodayData && Date.now() - cached.timestamp > CACHE_DURATION) {
+      inMemoryCache.delete(fullKey);
+      return null;
+    }
+
+    return cached.data;
+  } catch (error) {
+    console.warn("Error reading from cache:", error);
+    return null;
+  }
+};
+
+const setCachedData = (key, data) => {
+  const fullKey = CACHE_PREFIX + key;
+  const cacheEntry = {
+    data,
+    timestamp: Date.now(),
+  };
+
+  try {
+    // Try sessionStorage first
+    if (isSessionStorageAvailable) {
+      sessionStorage.setItem(fullKey, JSON.stringify(cacheEntry));
+    }
+
+    // Always set in-memory cache as backup
+    inMemoryCache.set(fullKey, cacheEntry);
+  } catch (error) {
+    console.warn("Error writing to cache:", error);
+    // Fallback to in-memory only
+    inMemoryCache.set(fullKey, cacheEntry);
+  }
+};
+
+const clearAllCache = () => {
+  try {
+    // Clear sessionStorage entries
+    if (isSessionStorageAvailable) {
+      const keysToRemove = [];
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key && key.startsWith(CACHE_PREFIX)) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((key) => sessionStorage.removeItem(key));
+    }
+
+    // Clear in-memory cache
+    inMemoryCache.clear();
+  } catch (error) {
+    console.warn("Error clearing cache:", error);
+  }
+};
+
 // Map each severity band to your chosen colors
 const SEVERITY_STYLES = {
   low: "bg-green-900/20 text-green-400 border-green-700/50",
@@ -21,15 +121,33 @@ export default function MainAlertPage() {
   const [showCalendar, setShowCalendar] = useState(false);
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFromCache, setIsFromCache] = useState(false);
 
   useEffect(() => {
     const fetchAlerts = async () => {
-      setIsLoading(true);
       const day = format(selectedDate, "yyyy-MM-dd");
+      const cacheKey = `alerts_${day}`;
+
+      // Try to get data from cache first
+      const cachedAlerts = getCachedData(cacheKey);
+      if (cachedAlerts) {
+        setAlerts(cachedAlerts);
+        setIsFromCache(true);
+        setIsLoading(false);
+        return;
+      }
+
+      // If not in cache, fetch from API
+      setIsLoading(true);
+      setIsFromCache(false);
+
       try {
         const res = await fetch(`${API_BASE}/alerts?date=${day}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
+
+        // Cache the processed data
+        setCachedData(cacheKey, data);
         setAlerts(data);
         setPage(1);
       } catch {
@@ -37,6 +155,7 @@ export default function MainAlertPage() {
       }
       setIsLoading(false);
     };
+
     fetchAlerts();
   }, [selectedDate]);
 

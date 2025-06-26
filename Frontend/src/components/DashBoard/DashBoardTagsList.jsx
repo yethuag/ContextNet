@@ -36,53 +36,52 @@ const TagsList = ({ alerts }) => {
     const ents = alert.entities || [];
     (alert.activities || []).forEach((act) => {
       if (!map[act]) {
-        map[act] = { count: 0, entities: [] };
+        map[act] = { count: 0, entityCounts: {} };
       }
       map[act].count += 1;
 
       ents.forEach((e) => {
-        if (
-          !map[act].entities.some(
-            (x) => x.text === e.text && x.label === e.label
-          )
-        ) {
-          map[act].entities.push(e);
-        }
+        const key = `${e.text}|||${e.label}`;
+        map[act].entityCounts[key] = (map[act].entityCounts[key] || 0) + 1;
       });
     });
   });
 
   const rows = Object.entries(map)
-    .map(([activity, { count, entities }], i) => ({
-      id: i + 1,
-      activity,
-      count,
-      entities: entities.slice(0, 5),
-    }))
+    .map(([activity, { count, entityCounts }], i) => {
+      const sortedEntities = Object.entries(entityCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3) // Top 3 entities
+        .map(([key, freq]) => {
+          const [text, label] = key.split("|||");
+          return { text, label, freq };
+        });
+
+      return {
+        id: i + 1,
+        activity,
+        count,
+        entities: sortedEntities,
+      };
+    })
     .sort((a, b) => b.count - a.count);
 
   const TableView = () => (
     <div className="overflow-x-auto -mx-2 sm:mx-0">
       <div className="inline-block min-w-full align-middle">
-        <table className="min-w-full text-left">
+        <table className="min-w-full text-right">
           <thead>
             <tr className="border-b border-gray-600/40">
-              <th className="py-2 px-1 sm:px-2 md:px-3 text-gray-400 text-xs sm:text-sm w-8 sm:w-12">
-                #
-              </th>
-              <th className="py-2 px-1 sm:px-2 md:px-3 text-gray-400 text-xs sm:text-sm min-w-[100px] sm:min-w-[140px]">
-                Activity
-              </th>
-              <th className="py-2 px-1 sm:px-2 md:px-3 text-gray-400 text-xs sm:text-sm w-12 sm:w-16 text-center">
+              <th className="py-2 px-2 text-gray-400 text-xl">#</th>
+              <th className="py-2 px-2 text-gray-400 text-xl">Activity</th>
+              <th className="py-2 px-2 text-gray-400 text-xl text-center">
                 Count
               </th>
-              <th className="py-2 px-1 sm:px-2 md:px-3 text-gray-400 text-xs sm:text-sm min-w-[120px] sm:min-w-[180px]">
-                Entities
-              </th>
+              <th className="py-2 px-2 text-gray-400 text-xl">Top Entities</th>
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && (
+            {rows.length === 0 ? (
               <tr>
                 <td
                   colSpan={5}
@@ -91,50 +90,44 @@ const TagsList = ({ alerts }) => {
                   No activity tags
                 </td>
               </tr>
-            )}
-            {rows.map((r) => (
-              <tr
-                key={r.id}
-                className="hover:bg-gray-700/20 transition-colors border-b border-gray-700/30"
-              >
-                <td className="py-2 px-2 text-center text-gray-300 text-xs">
-                  {r.id}
-                </td>
-                <td className="py-2 px-2 text-white text-xs break-words">
-                  {r.activity}
-                </td>
-                <td className="py-2 px-2 text-center text-white text-xs">
-                  {r.count}
-                </td>
-                <td className="py-2 px-2">
-                  <div className="flex flex-wrap gap-1">
-                    {r.entities
-                      .slice(0, screenSize === "lg" ? 2 : 3)
-                      .map((ent, idx) => {
+            ) : (
+              rows.map((r) => (
+                <tr
+                  key={r.id}
+                  className="hover:bg-gray-700/20 transition-colors border-b border-gray-700/30"
+                >
+                  <td className="py-2 px-2 text-center text-gray-300 text-xl">
+                    {r.id}
+                  </td>
+                  <td className="py-2 px-2 text-white text-xl break-words">
+                    {r.activity}
+                  </td>
+                  <td className="py-2 px-2 text-center text-white text-xl">
+                    {r.count}
+                  </td>
+                  <td className="py-2">
+                    <div className="flex justify-start gap-2">
+                      {r.entities.map((ent, idx) => {
                         const style =
                           entityLabelStyles[ent.label] ||
                           entityLabelStyles.default;
                         return (
                           <span
                             key={idx}
-                            className={`${style} inline-block px-1.5 py-0.5 rounded-full text-xs`}
-                            title={ent.text}
+                            className={`${style} inline-block px-1.5 py-0.5 rounded-full text-md`}
+                            title={`${ent.text} (${ent.freq} times)`}
                           >
-                            <span className="truncate inline-block max-w-[100px]">
+                            <span className="truncate inline-block">
                               {ent.text}
                             </span>
                           </span>
                         );
                       })}
-                    {r.entities.length > (screenSize === "lg" ? 2 : 3) && (
-                      <span className="text-gray-400 text-xs self-center">
-                        +{r.entities.length - (screenSize === "lg" ? 2 : 3)}
-                      </span>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -142,19 +135,12 @@ const TagsList = ({ alerts }) => {
   );
 
   return (
-    <div className="bg-gray-800/95 backdrop-blur-sm p-3 sm:p-4 md:p-6 rounded-xl sm:rounded-2xl border border-gray-600/30 w-full overflow-hidden shadow-xl sm:shadow-2xl">
+    <div className="bg-gray-800/95 backdrop-blur-sm p-3 sm:p-4 md:p-6 rounded-xl sm:rounded-2xl border border-gray-600/30 overflow-hidden shadow-xl sm:shadow-2xl">
       <div className="flex items-center justify-between mb-3 sm:mb-4">
         <h3 className="text-white text-base sm:text-lg md:text-xl font-medium">
           Activity Tags
         </h3>
       </div>
-
-      <div className="mb-2 sm:mb-3">
-        <span className="text-gray-400 text-xs">
-          Screen: {screenSize} | {rows.length} activities
-        </span>
-      </div>
-
       <TableView />
     </div>
   );

@@ -11,7 +11,7 @@ const API_BASE = "http://localhost:8001";
 
 // Enhanced cache with sessionStorage persistence and in-memory fallback
 const inMemoryCache = new Map();
-const CACHE_DURATION = 1 * 60 * 1000;
+const CACHE_DURATION = 30 * 60 * 1000;
 const CACHE_PREFIX = "dashboard_alerts_";
 const TODAY = format(new Date(), "yyyy-MM-dd");
 
@@ -259,13 +259,10 @@ const DashboardPage = () => {
       <div className="mb-6 sm:mb-8">
         <div className="bg-gray-800 rounded-xl p-4">
           <div
-            className="relative h-[400px] sm:h-[500px] rounded-lg overflow-hidden"
+            className="relative h-[400px] sm:h-[500px] rounded-lg overflow-hidden z-0"
             style={{ minHeight: "400px" }}
           >
-            <LeafletMap
-              date={selectedDate}
-              key={selectedDate.toISOString()} // Force remount on date change
-            />
+            <LeafletMap date={selectedDate} key={selectedDate.toISOString()} />
           </div>
         </div>
       </div>
