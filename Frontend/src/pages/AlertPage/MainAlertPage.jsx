@@ -12,6 +12,7 @@ const SEVERITY_STYLES = {
   low: "bg-green-900/20 text-green-400 border-green-700/50",
   medium: "bg-yellow-900/20 text-yellow-400 border-yellow-700/50",
   high: "bg-red-900/20   text-red-400   border-red-700/50",
+  info: "bg-blue-900/20  text-blue-400  border-blue-700/50",
 };
 
 export default function MainAlertPage() {
