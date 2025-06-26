@@ -283,7 +283,7 @@ export default function TrendPage() {
       {/* 2. Avg violence score */}
       <section>
         <h2 className="text-xl font-semibold mb-2 text-white">
-          Avg. Violence Score
+          Average Violence Score
         </h2>
         <ResponsiveContainer width="100%" height={200}>
           <AreaChart
@@ -356,7 +356,7 @@ export default function TrendPage() {
       {/* 3. Stacked area activities */}
       <section>
         <h2 className="text-xl font-semibold mb-2 text-white">
-          Activities by Day
+          Activities per Day
         </h2>
         <ResponsiveContainer width="100%" height={200}>
           <AreaChart
