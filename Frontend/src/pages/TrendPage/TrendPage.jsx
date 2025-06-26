@@ -15,6 +15,7 @@ import {
   PieChart,
   Pie,
   Cell,
+  CartesianGrid,
 } from "recharts";
 import { format, differenceInCalendarDays } from "date-fns";
 
@@ -81,6 +82,102 @@ export default function TrendPage() {
 
   const sevColors = { low: "#34D399", medium: "#FBBF24", high: "#F87171" };
 
+  function similarity(str1, str2) {
+    const s1 = str1.toLowerCase();
+    const s2 = str2.toLowerCase();
+
+    if (s1 === s2) return 1.0;
+    if (s1.includes(s2) || s2.includes(s1)) {
+      return 0.8;
+    }
+
+    const nationalitySuffixes = ["ian", "an", "ish", "ese", "i"];
+
+    for (const suffix of nationalitySuffixes) {
+      if (s1.endsWith(suffix) && s2 === s1.slice(0, -suffix.length)) {
+        return 0.9;
+      }
+      if (s2.endsWith(suffix) && s1 === s2.slice(0, -suffix.length)) {
+        return 0.9;
+      }
+    }
+    for (const suffix of nationalitySuffixes) {
+      if (s1.endsWith(suffix)) {
+        const root1 = s1.slice(0, -suffix.length);
+        if (s2.startsWith(root1) && s2.length - root1.length <= 2) {
+          return 0.85;
+        }
+      }
+      if (s2.endsWith(suffix)) {
+        const root2 = s2.slice(0, -suffix.length);
+        if (s1.startsWith(root2) && s1.length - root2.length <= 2) {
+          return 0.85;
+        }
+      }
+    }
+
+    // Simple Levenshtein-like similarity for close matches
+    if (Math.abs(s1.length - s2.length) <= 2) {
+      let matches = 0;
+      const minLength = Math.min(s1.length, s2.length);
+      for (let i = 0; i < minLength; i++) {
+        if (s1[i] === s2[i]) matches++;
+      }
+      const similarity = matches / Math.max(s1.length, s2.length);
+      if (similarity > 0.7) return similarity;
+    }
+
+    return 0;
+  }
+
+  function smartEntityDedup(entities, threshold = 0.7) {
+    const groups = [];
+
+    entities.forEach(({ entity, count }) => {
+      let bestMatch = null;
+      let bestSimilarity = 0;
+
+      for (const group of groups) {
+        const sim = similarity(entity, group.canonical);
+        if (sim >= threshold && sim > bestSimilarity) {
+          bestMatch = group;
+          bestSimilarity = sim;
+        }
+      }
+
+      if (bestMatch) {
+        // Add to existing group
+        bestMatch.count += count;
+        bestMatch.variants.push({ entity, count });
+
+        // Update canonical to the one with highest count
+        if (count > bestMatch.canonicalCount) {
+          bestMatch.canonical = entity;
+          bestMatch.canonicalCount = count;
+        }
+      } else {
+        // Create new group
+        groups.push({
+          canonical: entity,
+          canonicalCount: count,
+          count: count,
+          variants: [{ entity, count }],
+        });
+      }
+    });
+
+    return groups
+      .map((group) => ({
+        entity: group.canonical,
+        count: group.count,
+        mergedFrom: group.variants.length > 1 ? group.variants : undefined,
+      }))
+      .sort((a, b) => b.count - a.count);
+  }
+
+  // Process your data
+  const result = smartEntityDedup(topEntities);
+  console.log("Processed top entities:", result);
   return (
     <div className="p-6 space-y-8">
       {/* date range picker */}
@@ -336,12 +433,58 @@ export default function TrendPage() {
       {/* 4. Top entities bar */}
       <section>
         <h2 className="text-xl font-semibold mb-2 text-white">Top Entities</h2>
-        <ResponsiveContainer width="100%" height={180}>
-          <BarChart data={topEntities} layout="vertical">
-            <XAxis type="number" stroke="#ccc" />
-            <YAxis dataKey="entity" type="category" stroke="#ccc" width={120} />
-            <Tooltip />
-            <Bar dataKey="count" fill="#34D399" />
+        <ResponsiveContainer width="100%" height={400}>
+          <BarChart data={result} layout="vertical">
+            <XAxis
+              type="number"
+              stroke="#ccc"
+              fontSize={12}
+              axisLine={true}
+              tickLine={true}
+            />
+            <YAxis
+              dataKey="entity"
+              type="category"
+              stroke="#ccc"
+              width={90}
+              fontSize={11}
+              axisLine={true}
+              tickLine={true}
+              interval={0}
+            />
+            {/* Fixed CartesianGrid - only vertical lines to avoid crossings */}
+            <CartesianGrid
+              strokeDasharray="10 10"
+              stroke="#fff"
+              strokeOpacity={1}
+              horizontal={false}
+              vertical={true}
+            />
+            <Tooltip
+              formatter={(value, name) => [value, name, ""]}
+              labelFormatter={(label) => label}
+              cursor={{
+                fill: "#1e293b", // dark background
+                opacity: 0.3,
+              }}
+              contentStyle={{
+                backgroundColor: "#1f2937", // darker background (tailwind gray-800)
+                border: "1px solid #4b5563",
+                border: "none",
+                borderRadius: "4px",
+                fontSize: "11px",
+                padding: "2px 6px",
+                minHeight: "auto",
+                lineHeight: "1.2",
+              }}
+              itemStyle={{ color: "#fff", padding: "0" }}
+              labelStyle={{ color: "#fff", margin: "0", padding: "0" }}
+            />
+            <Bar
+              dataKey="count"
+              fill="rgba(96, 165, 250,0.7)"
+              radius={[0, 3, 3, 0]}
+            />
           </BarChart>
         </ResponsiveContainer>
       </section>
