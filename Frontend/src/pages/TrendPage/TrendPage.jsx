@@ -37,7 +37,8 @@ export default function TrendPage() {
     const d = spanDays;
     fetch(`${API}/stats/counts?days=${d}`)
       .then(r => r.json())
-      .then(setCounts)
+      .then(
+        setCounts)
       .catch(console.error);
 
     fetch(`${API}/stats/avg_violence?days=${d}`)
@@ -46,8 +47,13 @@ export default function TrendPage() {
       .catch(console.error);
 
     fetch(`${API}/stats/activities?days=${d}`)
-      .then(r => r.json())
-      .then(setActivities)
+      .then(r => {
+        console.log(r)
+        return r.json()
+      })
+      .then(data => {
+        setActivities(data)
+      })
       .catch(console.error);
   }, [spanDays]);
 
@@ -55,7 +61,9 @@ export default function TrendPage() {
   useEffect(() => {
     fetch(API + "/stats/top_entities")
       .then(r => r.json())
-      .then(setTopEntities)
+      .then(data => {
+        console.log('Top entities data:', data);
+        setTopEntities(data)})
       .catch(console.error);
 
     fetch(API + "/stats/severity")
@@ -99,11 +107,46 @@ export default function TrendPage() {
       {/* 1. Alerts-per-day */}
       <section>
         <h2 className="text-xl font-semibold mb-2 text-white">Alerts Per Day</h2>
-        <ResponsiveContainer width="100%" height={180}>
-          <LineChart data={counts}>
-            <XAxis dataKey="date" stroke="#ccc" />
-            <YAxis allowDecimals={false} stroke="#ccc" />
-            <Tooltip />
+        <ResponsiveContainer width="100%" height={200}>
+          <LineChart data={counts} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
+            <XAxis 
+              dataKey="date" 
+              tickFormatter={(value) => {
+                const date = new Date(value);
+                const day = date.getDate();
+                const month = date.toLocaleDateString('en-US', { month: 'long' });
+                const year = date.getFullYear().toString().slice(-2);
+                return `${day}-${month}-${year}`;
+              }}
+              stroke="#ccc"
+              tick={{ fill: '#ccc', fontSize: 12 }}
+              angle={-45}
+              textAnchor="end"
+              height={80}
+              label={{ value: 'Date', position: 'insideBottom', offset: -10, style: { textAnchor: 'middle', fill: '#ffffff' } }}
+            />
+            <YAxis 
+              allowDecimals={false} 
+              stroke="#ccc"
+              tick={{ fill: '#ccc', fontSize: 12 }}
+              label={{ value: 'Count', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#ffffff' } }}
+            />
+            <Tooltip 
+            labelFormatter={(value) => {
+              const date = new Date(value);
+              const day = date.getDate();
+              const month = date.toLocaleDateString('en-US', { month: 'long' });
+              const year = date.getFullYear().toString().slice(-2);
+              return `${day}-${month}-${year}`;
+            }}
+            formatter={(value, name) => [value, 'Count']}
+            contentStyle={{
+              backgroundColor: '#1f2937',
+              border: '1px solid #374151',
+              borderRadius: '6px',
+              color: '#ffffff'
+            }}
+            />
             <Line type="monotone" dataKey="count" stroke="#60A5FA" dot={false} />
           </LineChart>
         </ResponsiveContainer>
@@ -111,32 +154,99 @@ export default function TrendPage() {
 
       {/* 2. Avg violence score */}
       <section>
-        <h2 className="text-xl font-semibold mb-2 text-white">Avg. Violence Score</h2>
-        <ResponsiveContainer width="100%" height={180}>
-          <AreaChart data={avgViolence}>
-            <XAxis dataKey="date" stroke="#ccc" />
-            <YAxis domain={[0,1]} stroke="#ccc" />
-            <Tooltip formatter={v => v.toFixed(2)} />
-            <Area
-              type="monotone"
-              dataKey="avg_score"
-              stroke="#F87171"
-              fillOpacity={0.3}
-              fill="#F87171"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+    <h2 className="text-xl font-semibold mb-2 text-white">Avg. Violence Score</h2>
+    <ResponsiveContainer width="100%" height={200}>
+      <AreaChart data={avgViolence} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
+        <XAxis 
+          dataKey="date" 
+          tickFormatter={(value) => {
+            const date = new Date(value);
+            const day = date.getDate();
+            const month = date.toLocaleDateString('en-US', { month: 'long' });
+            const year = date.getFullYear().toString().slice(-2);
+            return `${day}-${month}-${year}`;
+          }}
+          stroke="#ccc"
+          tick={{ fill: '#ccc', fontSize: 11 }}
+          angle={-45}
+          textAnchor="end"
+          height={80}
+          label={{ value: 'Date', position: 'insideBottom', offset: -10, style: { textAnchor: 'middle', fill: '#ffffff' } }}
+        />
+        <YAxis 
+          domain={[0,1]} 
+          stroke="#ccc"
+          tick={{ fill: '#ccc', fontSize: 11 }}
+          label={{ value: 'Score', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#ffffff' } }}
+        />
+        <Tooltip 
+          labelFormatter={(value) => {
+            const date = new Date(value);
+            const day = date.getDate();
+            const month = date.toLocaleDateString('en-US', { month: 'long' });
+            const year = date.getFullYear().toString().slice(-2);
+            return `${day}-${month}-${year}`;
+          }}
+          formatter={(value, name) => [value.toFixed(2), 'Avg Score']}
+          contentStyle={{
+            backgroundColor: '#1f2937',
+            border: '1px solid #374151',
+            borderRadius: '6px',
+            color: '#ffffff'
+          }}
+        />
+        <Area
+          type="monotone"
+          dataKey="avg_score"
+          stroke="#60A5FA"
+          fillOpacity={0.3}
+          fill="#60A5FA"
+        />
+      </AreaChart>
+    </ResponsiveContainer>
       </section>
 
       {/* 3. Stacked area activities */}
       <section>
         <h2 className="text-xl font-semibold mb-2 text-white">Activities by Day</h2>
-        <ResponsiveContainer width="100%" height={180}>
-          <AreaChart data={activities}>
-            <XAxis dataKey="date" stroke="#ccc" />
-            <YAxis stroke="#ccc" />
-            <Tooltip />
-            <Legend />
+        <ResponsiveContainer width="100%" height={200}>
+          <AreaChart data={activities} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
+            <XAxis 
+              dataKey="date" 
+              tickFormatter={(value) => {
+                const date = new Date(value);
+                const day = date.getDate();
+                const month = date.toLocaleDateString('en-US', { month: 'long' });
+                const year = date.getFullYear().toString().slice(-2);
+                return `${day}-${month}-${year}`;
+              }}
+              stroke="#ccc"
+              tick={{ fill: '#ccc', fontSize: 11 }}
+              angle={-45}
+              textAnchor="end"
+              height={80}
+              label={{ value: 'Date', position: 'insideBottom', offset: -10, style: { textAnchor: 'middle', fill: '#ffffff' } }}
+            />
+            <YAxis 
+              stroke="#ccc"
+              tick={{ fill: '#ccc', fontSize: 11 }}
+              label={{ value: 'Count', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#ffffff' } }}
+            />
+            <Tooltip 
+              labelFormatter={(value) => {
+                const date = new Date(value);
+                const day = date.getDate();
+                const month = date.toLocaleDateString('en-US', { month: 'long' });
+                const year = date.getFullYear().toString().slice(-2);
+                return `${day}-${month}-${year}`;
+              }}
+              contentStyle={{
+                backgroundColor: '#1f2937',
+                border: '1px solid #374151',
+                borderRadius: '6px',
+                color: '#ffffff'
+              }}
+            />
             {activities[0] &&
               Object.keys(activities[0])
                 .filter(k => k !== "date")
@@ -145,14 +255,14 @@ export default function TrendPage() {
                     key={act}
                     stackId="1"
                     dataKey={act}
-                    stroke={["#F87171","#60A5FA","#FBBF24","#34D399"][i%4]}
-                    fill={["#F87171","#60A5FA","#FBBF24","#34D399"][i%4]}
+                    stroke={["#60A5FA","#8B5CF6","#10B981","#F59E0B"][i%4]}
+                    fill={["#60A5FA","#8B5CF6","#10B981","#F59E0B"][i%4]}
                     fillOpacity={0.4}
                   />
                 ))
             }
           </AreaChart>
-        </ResponsiveContainer>
+          </ResponsiveContainer>
       </section>
 
       {/* 4. Top entities bar */}
