@@ -24,7 +24,7 @@ def build_pipeline():
         ]
     ]
 
-    # 4) add injury terms (you can expand this list)
+    # 4) add injury terms 
     injury_patterns = [
         {"label": "INJURY", "pattern": pat}
         for pat in ["killed", "wounded", "injured", "casualties", "fatalities"]

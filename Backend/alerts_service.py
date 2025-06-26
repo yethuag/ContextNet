@@ -8,7 +8,8 @@ import json
 from datetime import datetime, timedelta
 from typing import List, Optional
 from fastapi import Path
-from sqlalchemy.types import Uuid
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from uuid import UUID
 from fastapi import FastAPI, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -19,7 +20,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Text, DateTime, Numeric, JSON
 from sqlalchemy import func
 from dotenv import load_dotenv
-
+import requests
 # ─── Load environment & set up DB ─────────────────────────────────────────────
 load_dotenv()
 DATABASE_URL = os.getenv("PG_DSN")
@@ -31,29 +32,29 @@ SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 Base = declarative_base()
 
 
-# ─── ORM model for alerts ───────────────────────────────────────────────────────
+#sql
 class Alert(Base):
     __tablename__ = "alerts"
     id             = Column(Text, primary_key=True)
-    new_id         = Column(Uuid(as_uuid=False), nullable=False)
+    new_id = Column(PG_UUID(as_uuid=True), nullable=False)
     source         = Column(Text)
     title          = Column(Text)
     summary        = Column(Text)
     published_at   = Column(DateTime(timezone=True))
     violence_score = Column(Numeric)
     fetched_at     = Column(DateTime(timezone=True))
-    geom           = Column(Text)    # store GEOJSON as text
+    geom           = Column(Text)
     entities       = Column(JSON)
-    activities     = Column(JSON)    # list of strings
+    activities     = Column(JSON)
     severity_band  = Column(Text)
     language       = Column(Text)
     image_url      = Column(Text)
 
 
-# ─── Pydantic schema for output ────────────────────────────────────────────────
+#pydantic model
 class AlertOut(BaseModel):
     id: str
-    new_id: str 
+    new_id: UUID
     source: str
     title: str
     summary: str
@@ -72,7 +73,6 @@ class AlertOut(BaseModel):
         from_attributes = True
 
 
-# ─── FastAPI application ───────────────────────────────────────────────────────
 app = FastAPI(title="Alerts Service")
 app.add_middleware(
     CORSMiddleware,
@@ -83,7 +83,6 @@ app.add_middleware(
 )
 
 
-# ─── DB dependency ──────────────────────────────────────────────────────────────
 def get_db():
     db = SessionLocal()
     try:
@@ -91,17 +90,24 @@ def get_db():
     finally:
         db.close()
 
+TONE_SERVICE_URL = "http://localhost:8002/infer" 
 
-# ─── Endpoint: List alerts by published date ────────────────────────────────────
+def infer_tone(title: str, summary: str):
+    try:
+        full_text = f"{title} {summary}"
+        response = requests.post(TONE_SERVICE_URL, json={"text": full_text}, timeout=5)
+        if response.ok:
+            return response.json()
+    except Exception as e:
+        print(f"Tone Service error: {e}")
+    return None
+
 @app.get("/alerts", response_model=List[AlertOut])
 def list_alerts(
     date: Optional[str] = Query(None, description="YYYY-MM-DD filter on published_at"),
     limit: int = Query(100, ge=1, le=1000),
     db=Depends(get_db),
 ):
-    """
-    List alerts, optionally filtered by the exact published date.
-    """
     stmt = select(Alert)
     if date:
         try:
@@ -117,7 +123,7 @@ def list_alerts(
 
     out = []
     for a in results:
-        # extract lon/lat from stored geom
+        # delete lon/lat from stored geom
         lon = lat = None
         if a.geom:
             gj = db.execute(
@@ -154,22 +160,30 @@ def list_alerts(
 #     return rec
 
 
-@app.get("/alerts/{new_id}", response_model=AlertOut)
+@app.get("/alerts/{new_id}")
 def get_alert(new_id: str, db=Depends(get_db)):
     a = db.execute(select(Alert).where(Alert.new_id == new_id)).scalar_one_or_none()
     if not a:
         raise HTTPException(404, detail="Alert not found")
+
     lon = lat = None
     if a.geom:
         gj = db.execute(
             select(ST_AsGeoJSON(text("alerts.geom"))).where(Alert.id == a.id)
         ).scalar_one_or_none()
         if gj:
-            c = json.loads(gj)["coordinates"]
-            lon, lat = c[0], c[1]
+            coords = json.loads(gj)["coordinates"]
+            lon, lat = coords[0], coords[1]
+
     rec = AlertOut.from_orm(a).dict()
-    rec.update({"lon": lon, "lat": lat}) 
+    rec.update({"lon": lon, "lat": lat})
+
+    # Call Tone Service only when alert details are requested
+    tone_result = infer_tone(a.title, a.summary)
+    rec["tone"] = tone_result or {}
+
     return rec
+
 
 # ─── Endpoint: GeoJSON for map ─────────────────────────────────────────────────
 @app.get("/map/geojson")
@@ -178,11 +192,6 @@ def alerts_geojson(
     date: Optional[str] = Query(None, description="YYYY-MM-DD filter on published_at"),
     db=Depends(get_db),
 ):
-    """
-    Return a GeoJSON FeatureCollection of alerts.
-    - If `date` is provided, returns alerts published on that date.
-    - Otherwise returns alerts fetched in the last `days`.
-    """
     if date:
         try:
             dt = datetime.fromisoformat(date)
@@ -214,7 +223,6 @@ def alerts_geojson(
     return {"type": "FeatureCollection", "features": features}
 
 
-# ─── Stats endpoint ────────────────────────────────────────────────
 @app.get("/stats/severity")
 def severity_stats(db=Depends(get_db)):
     cutoff = datetime.utcnow() - timedelta(days=30)
@@ -222,7 +230,6 @@ def severity_stats(db=Depends(get_db)):
     rows = db.execute(stmt).all()
     return [{"severity_band": band, "count": cnt} for band, cnt in rows]
 
-# 1. Counts per day for the last N days
 @app.get("/stats/counts")
 def daily_counts(days: int = Query(30, ge=1, le=365), db=Depends(get_db)):
     cutoff = datetime.utcnow() - timedelta(days=days)
@@ -237,7 +244,6 @@ def daily_counts(days: int = Query(30, ge=1, le=365), db=Depends(get_db)):
     )
     return [{"date": d, "count": c} for d, c in db.execute(stmt).all()]
 
-# 2. Average violence_score per day
 @app.get("/stats/avg_violence")
 def avg_violence(days: int = Query(30, ge=1, le=365), db=Depends(get_db)):
     cutoff = datetime.utcnow() - timedelta(days=days)
@@ -252,11 +258,9 @@ def avg_violence(days: int = Query(30, ge=1, le=365), db=Depends(get_db)):
     )
     return [{"date": d, "avg_score": float(c)} for d, c in db.execute(stmt).all()]
 
-# 3. Activities stack per day
 @app.get("/stats/activities")
 def activities_by_day(days: int = Query(14, ge=1, le=365), db=Depends(get_db)):
     cutoff = datetime.utcnow() - timedelta(days=days)
-    # unnest activities array and count per day + activity
     stmt = text("""
       SELECT to_char(published_at,'YYYY-MM-DD') AS date,
              activity,
@@ -267,7 +271,6 @@ def activities_by_day(days: int = Query(14, ge=1, le=365), db=Depends(get_db)):
       ORDER BY date
     """)
     rows = db.execute(stmt, {"cutoff": cutoff}).all()
-    # pivot into dict-of-dicts
     by_date = {}
     for date, act, cnt in rows:
         by_date.setdefault(date, {})[act] = cnt
@@ -276,7 +279,6 @@ def activities_by_day(days: int = Query(14, ge=1, le=365), db=Depends(get_db)):
       for date in sorted(by_date)
     ]
 
-# 4. Top entities overall
 @app.get("/stats/top_entities")
 def top_entities(limit: int = Query(10, ge=1, le=100), db=Depends(get_db)):
     # unnest entities JSON array, group by text
@@ -289,7 +291,6 @@ def top_entities(limit: int = Query(10, ge=1, le=100), db=Depends(get_db)):
     """)
     return [{"entity": e, "count": c} for e, c in db.execute(stmt, {"limit": limit})]
 
-# ─── Ensure table exists on startup ────────────────────────────────────────────
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)

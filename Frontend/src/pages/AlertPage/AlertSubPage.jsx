@@ -6,39 +6,63 @@ import LoadingScreen from "../../components/LoadingScreen";
 
 const API_BASE = "http://localhost:8001";
 
-// Style map for entities
 const ENTITY_STYLES = {
   PERSON: "bg-green-200 text-green-800",
+  NORP: "bg-indigo-200 text-indigo-800",
+  FAC: "bg-teal-200 text-teal-800",
   ORG: "bg-blue-200 text-blue-800",
   GPE: "bg-purple-200 text-purple-800",
   LOC: "bg-yellow-200 text-yellow-800",
-  TIME: "bg-orange-200 text-orange-800",
   PRODUCT: "bg-pink-200 text-pink-800",
-  NORP: "bg-indigo-200 text-indigo-800",
+  EVENT: "bg-orange-200 text-orange-800",
+  WORK_OF_ART: "bg-red-100 text-red-900",
+  LAW: "bg-yellow-200 text-yellow-800",
+  LANGUAGE: "bg-blue-100 text-blue-900",
+  DATE: "bg-green-100 text-green-900",
+  TIME: "bg-orange-100 text-orange-900",
+  PERCENT: "bg-pink-100 text-pink-900",
+  MONEY: "bg-green-200 text-green-900",
+  QUANTITY: "bg-purple-100 text-purple-900",
+  ORDINAL: "bg-yellow-100 text-yellow-900",
   CARDINAL: "bg-gray-200 text-gray-800",
   VIOLENT_ACT: "bg-red-200 text-red-800",
-  FAC: "bg-teal-200 text-teal-800",
-  DATE: "bg-green-100 text-green-900",
-  ORDINAL: "bg-yellow-100 text-yellow-900",
-  WORK_OF_ART: "bg-red-100 text-red-900",
+  WEAPON: "bg-rose-200 text-rose-800",
+  INJURY: "bg-red-100 text-red-800",
   default: "bg-gray-200 text-gray-800",
 };
 
 const ENTITY_DESCRIPTIONS = {
-  PERSON: "People, names of individuals",
-  ORG: "Organizations, companies, agencies",
-  GPE: "Countries, cities, states",
-  LOC: "Non‐GPE locations (mountains, rivers, etc.)",
-  TIME: "Time expressions (dates, times)",
-  PRODUCT: "Objects, vehicles, foods, etc.",
-  NORP: "Nationalities or religious/political groups",
-  CARDINAL: "Numerical values",
-  VIOLENT_ACT: "Describes violent acts",
-  FAC: "Buildings, airports, highways, etc.",
-  DATE: "Dates or calendar references",
-  ORDINAL: "“First”, “2nd”, etc.",
-  WORK_OF_ART: "Titles of works (books, songs, programs, etc.)",
-  WEAPON: "Weapons, firearms, explosives",
+  PERSON: "People, including fictional.",
+  NORP: "Nationalities or religious or political groups.",
+  FAC: "Buildings, airports, highways, bridges, etc.",
+  ORG: "Companies, agencies, institutions, etc.",
+  GPE: "Countries, cities, states.",
+  LOC: "Non-GPE locations, mountain ranges, bodies of water.",
+  PRODUCT: "Objects, vehicles, foods, etc. (Not services.)",
+  EVENT: "Named hurricanes, battles, wars, sports events, etc.",
+  WORK_OF_ART: "Titles of books, songs, programs, etc.",
+  LAW: "Named documents made into laws.",
+  LANGUAGE: "Any named language.",
+  DATE: "Absolute or relative dates or periods.",
+  TIME: "Times smaller than a day.",
+  PERCENT: "Percentage, including “%”.",
+  MONEY: "Monetary values, including units.",
+  QUANTITY: "Measurements, such as weight or distance.",
+  ORDINAL: "“First”, “Second”, etc.",
+  CARDINAL: "Numerals that do not fall under another type.",
+  VIOLENT_ACT: "Describes violent acts.",
+  WEAPON: "Weapons, firearms, explosives.",
+  INJURY: "References to injuries, casualties, fatalities.",
+};
+
+const TONE_COLORS = {
+  Positive: "text-green-400",
+  Negative: "text-red-400",
+  Neutral: "text-gray-400",
+  Critical: "text-yellow-400",
+  Sarcastic: "text-pink-400",
+  "Passive-Aggressive": "text-orange-400",
+  Offensive: "text-red-500",
 };
 
 export default function AlertSubPage() {
@@ -48,13 +72,10 @@ export default function AlertSubPage() {
 
   useEffect(() => {
     fetch(`${API_BASE}/alerts/${new_id}`)
-      .then((res) => {
-        console.log(res);
-        return res.json();
-      })
+      .then((res) => res.json())
       .then((data) => {
         if (!data) return navigate("/app/alerts");
-        return setAlert(data);
+        setAlert(data);
       })
       .catch(() => navigate("/app/alerts"));
   }, [new_id, navigate]);
@@ -63,25 +84,21 @@ export default function AlertSubPage() {
     return <LoadingScreen />;
   }
 
-  // Handle missing 'lat' and 'lon'
-  const {
-    title,
-    source,
-    summary,
-    published_at,
-    entities,
-    activities,
-    lat,
-    lon,
-  } = alert;
-
-  // Handle case where 'published_at' is null or undefined
+  const { title, source, summary, published_at, entities, activities, tone } =
+    alert;
   const formattedDate = published_at
     ? format(new Date(published_at), "PPpp")
     : "—";
-
-  // Unique entity labels for the legend
   const uniqueLabels = Array.from(new Set(entities.map((e) => e.label)));
+
+  // Determine dominant tone
+  let dominantTone = null;
+  if (tone?.labels && tone?.scores) {
+    const maxIdx = tone.scores.indexOf(Math.max(...tone.scores));
+    dominantTone = tone.labels[maxIdx];
+  }
+
+  const toneColor = TONE_COLORS[dominantTone] || "text-white";
 
   return (
     <div className="bg-gray-900 min-h-screen p-6 text-gray-200">
@@ -92,17 +109,45 @@ export default function AlertSubPage() {
         ← Back to Alerts
       </button>
 
-      <h1 className="text-2xl font-bold mb-2">{title}</h1>
+      <h1 className="text-2xl font-bold mb-2">
+        <HighlightedText text={title} entities={entities} />
+      </h1>
+
       <div className="text-sm text-gray-400 mb-4">
         {source} • {formattedDate}
       </div>
 
-      {/* Summary with highlights */}
       <div className="prose prose-invert mb-6">
         <HighlightedText text={summary} entities={entities} />
       </div>
 
-      {/* Detected Entities */}
+      {/* Tone Analysis */}
+      {tone?.labels && tone?.scores && (
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-2">Tone Inference</h2>
+          <ul>
+            {tone.labels.map((label, i) => (
+              <li
+                key={i}
+                className="flex justify-between border-b border-gray-700 py-1"
+              >
+                <span>{label}</span>
+                <span className="text-gray-400">
+                  {(tone.scores[i] * 100).toFixed(1)}%
+                </span>
+              </li>
+            ))}
+          </ul>
+
+          {dominantTone && (
+            <div className={`mt-4 font-semibold ${toneColor}`}>
+              This article's dominant tone is: {dominantTone}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Entities */}
       <h2 className="text-xl font-semibold mb-2">Detected Entities</h2>
       <ul className="grid grid-cols-2 gap-2 mb-8">
         {entities.map((e, i) => {
