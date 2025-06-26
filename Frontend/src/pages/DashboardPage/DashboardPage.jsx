@@ -200,22 +200,8 @@ const DashboardPage = () => {
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-purple-400">
             Dashboard
           </h1>
-          {isFromCache && (
-            <span className="text-xs bg-green-900/20 text-green-400 px-2 py-1 rounded border border-green-700/50 whitespace-nowrap">
-              {isSessionStorageAvailable
-                ? "Cached (Session)"
-                : "Cached (Memory)"}
-            </span>
-          )}
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <button
-            onClick={clearCache}
-            className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-500 transition-colors whitespace-nowrap"
-            title="Clear cache and refresh data"
-          >
-            Refresh
-          </button>
           <button
             onClick={() => setShowCalendar(true)}
             className="bg-gray-700 text-white px-3 sm:px-4 py-2 rounded text-sm sm:text-base flex-1 sm:flex-none text-center"
